@@ -17,7 +17,7 @@ class Field(object):
     Object for abstracting a field in a dataset.
     """
 
-    options = frozenset(("data", "format", "hash", "pii", "ssn", "type", "offsets"))
+    options = frozenset(("data", "format", "hash", "pii", "ssn", "type", "offsets", "skip"))
 
     def __init__(self, name, options={}, dataset=""):
         # Defaults
@@ -28,13 +28,14 @@ class Field(object):
         self.pii = False
         self.ssn = False
         self.type = "varchar"
+        self.skip = False
         # Parse options
         for k in options:
             if k not in self.options:
                 raise ValueError("unknown '{}' option in field '{}/{}'".format(k, dataset, name))
             setattr(self, k, options[k])
         # Default to data if pii was not specified
-        if not self.pii:
+        if (self.skip is False) and (not self.pii):
             self.data = True
 
 

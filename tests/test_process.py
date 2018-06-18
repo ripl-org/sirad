@@ -104,6 +104,9 @@ class TestSplitCredit(ThisTester):
         raw = self.processed_reader(self.data_file)
         raw_values = [(r['last'], r['first'], r['credit_score']) for r in raw.values()]
 
+        # Check expected number of columns
+        self.assertEqual(len(d_rows[0].keys()), 2)
+
         self.assertIn("record_id", d_rows[0].keys())
         self.assertIn("pii_id", p_rows[0].keys())
         self.assertIn("dob", p_rows[0].keys())

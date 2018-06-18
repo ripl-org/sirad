@@ -12,3 +12,5 @@ fields:
     format: "%m-%d-%Y"
 - credit_score:
     type: int
+- note:
+    skip: true
