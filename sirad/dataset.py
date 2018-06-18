@@ -65,7 +65,7 @@ class Dataset(object):
             setattr(self, k, layout[k])
         for field in fields:
             if isinstance(field, str):
-                self.fields.append(Field(name))
+                self.fields.append(Field(field))
             else:
                 for name, options in field.items():
                     self.fields.append(Field(name, options, dataset=self.name))

@@ -76,8 +76,10 @@ class TestSplitTax(ThisTester):
             pv = [d for d in p_rows.values() if d['pii_id'] == lids['pii_id']][0]
             dv = [d for d in d_rows.values() if d['record_id'] == lids['record_id']][0]
 
-            # ssns should be different
-            self.assertNotEqual(dv['ssn'], pv['ssn'])
+            self.assertTrue("job" in dv.keys())
+            self.assertFalse("job" in pv.keys())
+            self.assertIsNone(dv.get("ssn"))
+            self.assertIsNotNone(pv.get("ssn"))
 
             to_check = (pv['last_name'], pv['first_name'])
             self.assertIn(to_check, raw_values)
