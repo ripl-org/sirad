@@ -1,5 +1,7 @@
 tests/data/data.csv
 .idea/*
+staged/*
+tests/staged/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

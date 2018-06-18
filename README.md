@@ -20,9 +20,9 @@ First, clone repository and then install via pip from the root of the clone proj
 There is a single command line script included, `sirad`. Run `$ sirad --help`.
 
 `sirad` supports the following arguments:
-* `process` - convert raw data files into deidentified files
-* `stage` - stage the processed data files into a local sqlite database
-* `research` - create a deiden
+* `process` - convert raw data files into deidentified files.
+* `stage` - stage the processed data files into a local sqlite database.
+* `research` - create a research version of the database, with a unique anonymous identifier (SIRAD_ID), with the staged tables.
 
 The following file formats are supported:
 * csv - change delimiter with delimiter option
