@@ -1,0 +1,14 @@
+source: credit_scores.txt
+type: csv
+delimiter: "|"
+fields:
+- first:
+    pii: first_name
+- last_name:
+    pii: last_name
+- birth_date:
+    pii: dob
+    type: date
+    format: "%m-%d-%Y"
+- credit_score:
+    type: int

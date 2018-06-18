@@ -1,0 +1,33 @@
+#!/usr/env/bin python
+"""
+SIRAD - Secure Infrastructure for Research with Administrative Data
+"""
+
+import argparse
+import sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+
+subparsers = parser.add_subparsers()
+#subparsers.required = True
+
+process = subparsers.add_parser("process")
+process.set_defaults(cmd="process")
+
+stage = subparsers.add_parser("stage")
+stage.set_defaults(cmd="stage")
+
+research = subparsers.add_parser("research")
+research.add_argument("--version", "-v", type=int, required=True)
+research.set_defaults(cmd="research")
+
+args = parser.parse_args()
+
+if args.cmd:
+    import sirad
+    if args.cmd == "process":
+        sirad.process_all()
+    elif args.cmd == "stage":
+        sirad.stage_all()
+    elif args.cmd == "research":
+        sirad.Research(args.version)

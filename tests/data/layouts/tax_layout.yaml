@@ -1,0 +1,22 @@
+source: tax.txt
+type: csv
+delimiter: "|"
+fields:
+- first_name:
+    pii: first_name
+- last_name:
+    pii: last_name
+- ssn:
+    hash: true
+    pii: ssn
+    ssn: true
+- job
+- birth_date:
+    pii: dob
+    type: date
+    format: "%m-%d-%Y"
+- file_date:
+    type: date
+    format: "%m/%d/%Y"
+- adjusted_gross_income:
+    type: int

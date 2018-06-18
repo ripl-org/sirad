@@ -1,0 +1,50 @@
+first|last|ssn|job|birth_date|file_date|agi
+Megan|Gates|000-03-5091|Fine artist|07-02-1959|04/14/2018|89598
+Bradley|Hamilton|000-32-9961|Development worker, international aid|08-06-1965|01/28/2018|71299
+Jessica|Daniel|000-27-4824|Engineer, energy|03-03-1976|01/21/2018|29357
+Roy|Hicks|000-44-4783|Risk analyst|03-09-1978|03/11/2018|6893
+Yesenia|Johnston|000-56-7319|Dancer|07-06-1998|03/18/2018|25853
+John|Townsend|000-85-9894|Merchandiser, retail|08-18-1950|04/11/2018|73551
+Angela|Rose|000-72-4110|Sub|02-12-1991|02/25/2018|35528
+Paul|Kaiser|000-84-7565|Cytogeneticist|05-11-1992|04/09/2018|106237
+Whitney|Thompson|000-19-6097|Agricultural engineer|03-20-1997|02/07/2018|99565
+William|Rodriguez|000-72-0015|Adult guidance worker|01-01-1967|01/06/2018|114729
+Amy|Williams|000-70-1017|Teacher, adult education|12-26-1950|04/23/2018|22541
+Anthony|Melton|000-09-9291|Estate agent|06-09-1968|01/13/2018|623448
+Crystal|Mitchell|000-40-8046|Human resources officer|08-17-1953|02/16/2018|73242
+Ronald|Tate|000-00-2136|Librarian, public|04-02-1981|01/28/2018|8451
+Erica|Delgado|000-96-4398|Quarry manager|10-01-1977|04/03/2018|51710
+Vincent|Williams|000-36-9739|Editorial assistant|09-25-1998|01/15/2018|14924
+Lori|Cross|000-80-4337|Private music teacher|05-27-1975|02/23/2018|48033
+Alexander|Williams|000-57-4602|Wellsite geologist|08-23-1976|04/12/2018|41329
+Ashley|Cline|000-13-0711|Engineer, maintenance (IT)|01-10-1965|02/18/2018|14506
+Anthony|Everett|000-84-2673|Radiographer, diagnostic|01-24-1958|03/27/2018|104518
+Stacey|Bell|000-22-3531|Industrial buyer|02-07-1991|01/21/2018|17464
+Jonathan|White|000-84-2513|Chartered loss adjuster|07-15-1984|05/01/2018|16030
+Toni|Weaver|000-19-8905|Advertising account executive|11-17-1996|03/29/2018|555469
+David|Johnson|000-75-8884|Engineer, production|03-08-1982|02/19/2018|18139
+Madeline|Mcguire|000-82-2339|Investment banker, corporate|01-17-1971|05/01/2018|2003
+Joshua|Adams|000-55-8428|Research officer, government|05-12-1974|02/11/2018|62081
+Alexis|Griffin|000-08-8228|Radiographer, therapeutic|11-04-1996|02/06/2018|1878
+Jeffrey|Jackson|000-53-9871|Field trials officer|09-11-1984|04/03/2018|3525
+Lacey|Burnett|000-18-7259|Therapist, occupational|11-26-1969|01/28/2018|21527
+David|Roth|000-25-6225|Environmental health practitioner|01-01-1952|01/19/2018|108494
+Tiffany|Young|000-08-0446|Scientist, forensic|10-15-1954|03/22/2018|10545
+Frank|Knox|000-67-7437|Industrial/product designer|02-15-1999|04/19/2018|101285
+Megan|Ramos|000-97-9370|Contracting civil engineer|02-03-1995|04/16/2018|101726
+Stephen|Luna|000-07-6527|Recruitment consultant|10-12-1987|04/02/2018|8924
+Alexandria|Chase|000-70-3533|Music therapist|06-15-1979|04/27/2018|133937
+Nathan|Jones|000-38-3373|Sports administrator|09-06-1983|02/21/2018|2976
+Ashley|Williams|000-98-4454|Medical laboratory scientific officer|10-21-1966|03/15/2018|112611
+Bobby|Shepard|000-79-3516|Optometrist|09-05-1957|03/10/2018|83300
+Annette|Turner|000-33-1573|Science writer|10-09-1984|02/25/2018|17187
+Jesus|Webb|000-39-3758|Editor, commissioning|03-15-1988|04/11/2018|14890
+Stephanie|Maynard|000-11-1225|Records manager|08-28-1974|02/14/2018|112368
+Matthew|Cole|000-60-3766|Surveyor, land/geomatics|02-27-1974|01/19/2018|128141
+Renee|Baldwin|000-11-2682|Research scientist (medical)|06-15-1967|03/14/2018|148141
+Jeff|Sutton|000-23-5720|Trade mark attorney|10-12-1972|01/19/2018|8803
+Caitlyn|Marks|000-84-2626|Buyer, retail|08-05-1958|03/05/2018|77675
+Paul|Patel|000-19-9705|Careers adviser|12-23-1985|04/07/2018|46014
+Taylor|Perry|000-76-7453|Sports coach|06-02-1983|02/17/2018|100080
+Timothy|Reid|000-80-8483|Veterinary surgeon|05-11-1974|03/30/2018|127631
+Elizabeth|Nunez|000-91-8926|Research scientist (physical sciences)|01-02-1998|01/26/2018|589559

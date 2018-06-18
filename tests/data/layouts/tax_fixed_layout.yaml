@@ -1,0 +1,29 @@
+source: tax_fixed.txt
+type: fixed
+header: false
+fields:
+- first_name:
+    offsets: 10
+    pii: first_name
+- last_name:
+    offsets: 10
+    pii: last_name
+- ssn:
+    offsets: 10
+    hash: true
+    pii: ssn
+    ssn: true
+- job:
+    offsets: 39
+- birth_date:
+    offsets: 9
+    pii: dob
+    type: date
+    format: "%m-%d-%Y"
+- file_date:
+    offsets: 10
+    type: date
+    format: "%m/%d/%Y"
+- adjusted_gross_income:
+    offsets: 6
+    type: int

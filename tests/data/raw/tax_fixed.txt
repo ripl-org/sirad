@@ -1,0 +1,9 @@
+Megan     Gates      000-03-5091  Fine artist                           7/2/1959 4/14/2018 89598
+Bradley   Hamilton   000-32-9961  Development worker, international a   8/6/1965 1/28/2018 71299
+Jessica   Daniel     000-27-4824  Engineer, energy                      3/3/1976 1/21/2018 29357
+Roy       Hicks      000-44-4783  Risk analyst                          3/9/1978 3/11/2018  6893
+Yesenia   Johnston   000-56-7319  Dancer                                7/6/1998 3/18/2018 25853
+John      Townsend   000-85-9894  Merchandiser, retail                 8/18/1950 4/11/2018 73551
+Angela    Rose       000-72-4110  Sub                                  2/12/1991 2/25/2018 35528
+Paul      Kaiser     000-84-7565  Cytogeneticist                       5/11/1992  4/9/2018106237
+Whitney   Thompson   000-19-6097  Agricultural engineer                3/20/1997  2/7/2018 99565
