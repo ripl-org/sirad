@@ -7,7 +7,7 @@ import random
 import os
 from pathlib import Path
 
-from . import config
+from sirad import config
 
 
 def path(name, outdir):

@@ -18,8 +18,8 @@ from sqlalchemy import Integer, String, DateTime
 from sqlalchemy.exc import OperationalError
 
 
-from . import config
-from .process import path as process_path
+from sirad import config
+from sirad.process import path as process_path
 
 
 def str_convertor(x):

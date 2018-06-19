@@ -6,10 +6,10 @@ a method to split the raw data into data and pii rows based on the layout.
 import io
 import os
 
-from . import config
-from . import extract
-from . import readers
-from . import validate
+from sirad import config
+from sirad import extract
+from sirad import readers
+from sirad import validate
 
 
 class Field(object):

@@ -6,7 +6,7 @@ import os
 import sys
 import yaml
 
-from .dataset import Dataset
+from sirad.dataset import Dataset
 
 # Available options with defaults set
 _options = {
@@ -16,7 +16,7 @@ _options = {
     "PROCESSED": "processed",
     "LAYOUTS": "layouts",
     "STAGED": "staged",
-    "RESEARCH": "research_v{}")
+    "RESEARCH": "research_v{}"
 }
 
 # TODO determine if UTC will work across Dbs or if this needs to be a configuration.

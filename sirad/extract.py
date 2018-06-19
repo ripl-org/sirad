@@ -5,7 +5,7 @@ Helper functions for extracting values from fields.
 import hashlib
 import logging
 
-from . import config
+from sirad import config
 from datetime import datetime
 
 log = logging.getLogger(__name__)

@@ -25,24 +25,28 @@ args = parser.parse_args()
 
 if "cmd" in args:
 
-    import sirad
     import logging
     logging.basicConfig(level=logging.INFO)
 
     if args.cmd == "process":
-        sirad.config.parse_layouts()
-        for dataset in sirad.config.DATASETS:
+        from sirad import config
+        from sirad.process import Process
+        config.parse_layouts()
+        for dataset in config.DATASETS:
             logging.info("Processing {}.".format(dataset.name))
-            sirad.Process(dataset)
+            Process(dataset)
 
     elif args.cmd == "stage":
-        sirad.config.parse_layouts()
-        for dataset in sirad.config.DATASETS:
+        from sirad import config
+        from sirad.stage import Stage
+        config.parse_layouts()
+        for dataset in config.DATASETS:
             logging.info("Staging {}.".format(dataset.name))
-            sirad.Stage(dataset)
+            Stage(dataset)
 
     elif args.cmd == "research":
-        sirad.Research(args.version)
+        from sirad.research import Research
+        Research(args.version)
 
 elif args.version:
     from sirad import __version__

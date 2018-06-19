@@ -9,8 +9,8 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.engine import reflection
 
-from . import config
-from . import stage
+from sirad import config
+from sirad import stage
 
 
 class SqliteDB(object):

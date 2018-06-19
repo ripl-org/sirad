@@ -1,4 +1,0 @@
-jellyfish
-openpyxl
-sqlalchemy
-PyYAML
