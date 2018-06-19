@@ -5,7 +5,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="sirad",
-    version="0.1",
+    version="0.1.0",
     description="Secure Infrastructure for Research with Administrative Data",
     install_requires=requirements,
     packages=find_packages(),

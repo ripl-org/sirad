@@ -16,7 +16,7 @@ _options = {
     "PROCESSED": "processed",
     "LAYOUTS": "layouts",
     "STAGED": "staged",
-    "RESEARCH": os.path.join("build", "research_v{}")
+    "RESEARCH": "research_v{}")
 }
 
 # TODO determine if UTC will work across Dbs or if this needs to be a configuration.

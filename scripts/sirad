@@ -7,9 +7,9 @@ import argparse
 import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--version", "-v", action="store_true")
 
 subparsers = parser.add_subparsers()
-#subparsers.required = True
 
 process = subparsers.add_parser("process")
 process.set_defaults(cmd="process")
@@ -23,11 +23,31 @@ research.set_defaults(cmd="research")
 
 args = parser.parse_args()
 
-if args.cmd:
+if "cmd" in args:
+
     import sirad
+    import logging
+    logging.basicConfig(level=logging.INFO)
+
     if args.cmd == "process":
-        sirad.process_all()
+        sirad.config.parse_layouts()
+        for dataset in sirad.config.DATASETS:
+            logging.info("Processing {}.".format(dataset.name))
+            sirad.Process(dataset)
+
     elif args.cmd == "stage":
-        sirad.stage_all()
+        sirad.config.parse_layouts()
+        for dataset in sirad.config.DATASETS:
+            logging.info("Staging {}.".format(dataset.name))
+            sirad.Stage(dataset)
+
     elif args.cmd == "research":
         sirad.Research(args.version)
+
+elif args.version:
+    from sirad import __version__
+    print("SIRAD version", __version__)
+
+else:
+    parser.print_help()
+
