@@ -4,7 +4,8 @@
 deidentifies administrative data by removing and replacing personally
 identifiable information (PII) with a global anonymized identifier, allowing
 researchers to securely join data on an individual from multiple tables without
-knowing the individual's identity.
+knowing the individual's identity. It is developed by
+[Research Improving People's Lives (RIPL)](https://ripl.org).
 
 For a worked example and further details, please see
 [sirad-example](https://github.com/riipl-org/sirad-example).
