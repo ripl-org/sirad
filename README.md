@@ -83,3 +83,9 @@ Run unit tests as:
 `python -m unittest discover`
 
 `sirad` can also be used as an API from custom Python code. Documentation to come.
+
+## Authors
+* Mark Howison
+* Ted Lawless
+* John Ucles
+* Preston White
