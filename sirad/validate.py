@@ -29,8 +29,6 @@ def ssn(raw, dob):
     """
     Clean SSN and check if valid using information from ssa.gov website
     See : https://www.ssa.gov/employer/stateweb.htm
-
-    ToDo: add dob checks
     """
     valid = "0"
     invalid = "1"

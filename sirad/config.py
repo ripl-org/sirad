@@ -19,8 +19,7 @@ _options = {
     "RESEARCH": "research_v{}"
 }
 
-# TODO determine if UTC will work across Dbs or if this needs to be a configuration.
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT = "%Y-%m-%d"
 
 NULL_VALUES = frozenset(("", "NULL", "null", "NA", "na", "N/A", "#N/A", "NaN", "nan", ".", "#NULL!"))
 
