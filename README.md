@@ -8,17 +8,17 @@ knowing the individual's identity. It is developed by
 [Research Improving People's Lives (RIPL)](https://ripl.org).
 
 For a worked example and further details, please see
-[sirad-example](https://github.com/riipl-org/sirad-example).
+[sirad-example](https://github.com/ripl-org/sirad-example).
 
 ## Installation
 
-Requires Python 3.6 or later.
+Requires Python 3.7 or later.
 
 To install from PyPI using **pip**:  
 `pip install sirad`
 
 To install using **Anaconda Python**:  
-`conda install -c riipl-org sirad`
+`conda install -c ripl-org sirad`
 
 To install a **development version** from the current directory:  
 `pip install -e .`

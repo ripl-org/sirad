@@ -6,7 +6,7 @@ with open("README.md") as f:
 setup(
     name="sirad",
     version="0.1.2",
-    url="https://github.com/riipl-org/sirad",
+    url="https://github.com/ripl-org/sirad",
     description="Secure Infrastructure for Research with Administrative Data",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -16,9 +16,9 @@ setup(
         "Intended Audience :: Science/Research",
         "Natural Language :: English",
         "Operating System :: POSIX :: Linux",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering"],
-    provides=["agalma"],
+    provides=["sirad"],
     install_requires=[
         "jellyfish",
         "openpyxl",
