@@ -3,7 +3,6 @@ Dataset object represents the parsed layout for a dataset and provides
 a method to split the raw data into data and pii rows based on the layout.
 """
 
-import io
 import os
 
 from sirad import config
@@ -44,7 +43,7 @@ class Dataset(object):
     Object for abstracting a dataset that is defined by a YAML layout file.
     """
 
-    options = frozenset(("name", "source", "type", "delimiter", "header"))
+    options = frozenset(("name", "source", "type", "delimiter", "header", "encoding"))
 
     def __init__(self, name, layout):
         # Defaults
@@ -53,6 +52,7 @@ class Dataset(object):
         self.delimiter = ","
         self.header = True
         self.fields = []
+        self.encoding = "utf-8"
         # Test for required options
         if "source" not in layout:
             raise ValueError("no 'source' specified in layout for '{}'".format(name))
@@ -86,6 +86,7 @@ class Dataset(object):
         # Setup paths
         self.source = os.path.join(config.get_option("RAW"), self.source)
 
+
     def get_reader(self):
         """
         Return either a CSV, fixed-format, or Excel reader depending on the dataset's type.
@@ -93,7 +94,7 @@ class Dataset(object):
         if self.type == "xlsx":
             return readers.xlsx_reader(self.source), None
         else:
-            f = io.open(self.source)
+            f = open(self.source, "r", encoding=self.encoding, newline="")
             if self.type == "fixed":
                 column_offsets = [(fld.name, fld.offsets) for fld in self.fields if hasattr(fld, "offsets")]
                 reader = readers.fixed_reader(f, column_offsets)
@@ -138,4 +139,3 @@ class Dataset(object):
 
         if file_handle is not None:
             file_handle.close()
-
