@@ -1,10 +1,4 @@
-import re
 from datetime import date
-import logging
-
-log = logging.getLogger(__name__)
-
-nondigits_regex = re.compile(r"[^\d]")
 
 ssn_exclude = [
     "012345678",
@@ -33,7 +27,7 @@ def ssn(raw, dob):
     valid = "0"
     invalid = "1"
     maybe = "2"
-    ssn_digits = re.sub(nondigits_regex, "", raw)
+    ssn_digits = "".join(c for c in str(raw) if c.isdigit())
     area = ssn_digits[0:3]
     group = ssn_digits[3:5]
     serial = ssn_digits[5:9]
