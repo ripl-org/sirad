@@ -20,7 +20,6 @@ setup(
         "Topic :: Scientific/Engineering"],
     provides=["sirad"],
     install_requires=[
-        "jellyfish",
         "openpyxl",
         "PyYAML"],
     packages=find_packages(),

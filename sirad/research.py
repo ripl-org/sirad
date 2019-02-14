@@ -5,10 +5,10 @@ Create a research release.
 import numpy as np
 import os
 import pandas as pd
-from jellyfish import soundex
 from pathlib import Path
 
 from sirad import config
+from sirad.soundex import soundex
 
 def Research():
     """
