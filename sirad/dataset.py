@@ -84,7 +84,7 @@ class Dataset(object):
         self.pii_header  = [c[0] for c in self.pii_cols]
         self.link_header = [c[0] for c in self.link_cols]
         # Setup paths
-        self.source = os.path.join(config.get_option("RAW"), self.source)
+        self.source = os.path.join(config.get_option("RAW_DIR"), self.source)
 
 
     def get_reader(self):

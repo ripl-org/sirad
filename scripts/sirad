@@ -14,11 +14,7 @@ subparsers = parser.add_subparsers()
 process = subparsers.add_parser("process")
 process.set_defaults(cmd="process")
 
-stage = subparsers.add_parser("stage")
-stage.set_defaults(cmd="stage")
-
 research = subparsers.add_parser("research")
-research.add_argument("--version", "-v", type=int, required=True)
 research.set_defaults(cmd="research")
 
 args = parser.parse_args()
@@ -28,25 +24,18 @@ if "cmd" in args:
     import logging
     logging.basicConfig(level=logging.INFO)
 
+    from sirad import config
+    config.parse_layouts()
+
     if args.cmd == "process":
-        from sirad import config
         from sirad.process import Process
-        config.parse_layouts()
         for dataset in config.DATASETS:
             logging.info("Processing {}.".format(dataset.name))
             Process(dataset)
 
-    elif args.cmd == "stage":
-        from sirad import config
-        from sirad.stage import Stage
-        config.parse_layouts()
-        for dataset in config.DATASETS:
-            logging.info("Staging {}.".format(dataset.name))
-            Stage(dataset)
-
     elif args.cmd == "research":
         from sirad.research import Research
-        Research(args.version)
+        Research()
 
 elif args.version:
     from sirad import __version__

@@ -3,25 +3,17 @@ Provides a method to process a dataset into data, pii, and link files.
 """
 
 import csv
-import random
 import os
-from pathlib import Path
+import random
 
 from sirad import config
-
-
-def path(name, outdir):
-    outdir = os.path.join(config.get_option("PROCESSED"), outdir)
-    Path(outdir).mkdir(parents=True, exist_ok=True)
-    return os.path.join(outdir, "{}.txt".format(name))
-
 
 def Process(dataset):
     # Cache all pii rows, to later shuffle their record numbers
     prows = []
 
     # Split and write the data file
-    data_path = path(dataset.name, "data")
+    data_path = config.get_path(dataset.name, "data")
     with open(data_path, "w") as f:
         writer = csv.writer(f, dialect="sirad")
         writer.writerow(dataset.data_header)
@@ -34,8 +26,8 @@ def Process(dataset):
 
     # Shuffle and write the pii and link files
     if dataset.has_pii:
-        pii_path  = path(dataset.name, "pii")
-        link_path = path(dataset.name, "link")
+        pii_path  = config.get_path(dataset.name, "pii")
+        link_path = config.get_path(dataset.name, "link")
         with open(pii_path, "w") as f1, open(link_path, "w") as f2:
             pwriter = csv.writer(f1, dialect="sirad")
             pwriter.writerow(dataset.pii_header)
@@ -51,4 +43,3 @@ def Process(dataset):
         link_path = None
 
     return data_path, pii_path, link_path
-

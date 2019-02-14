@@ -20,9 +20,13 @@ class ThisTester(unittest.TestCase):
 
     def setUp(self):
         self.output_dir = os.path.join(project_dir, "processed")
-        config.set_option("PROCESSED", self.output_dir)
+        config.set_option("DATA_DIR", os.path.join(self.output_dir, "data"))
+        config.set_option("PII_DIR", os.path.join(self.output_dir, "pii"))
+        config.set_option("LINK_DIR", os.path.join(self.output_dir, "link"))
         config.set_option("DATA_SALT", "testcode")
-        config.set_option("RAW", os.path.join(project_dir, "data", "raw"))
+        config.set_option("PII_SALT", "testcode")
+        config.set_option("RAW_DIR", os.path.join(project_dir, "data", "raw"))
+        config.set_option("PROJECT", "Test")
         self.clean_up = True
 
     def processed_reader(self, path):

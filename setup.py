@@ -22,7 +22,6 @@ setup(
     install_requires=[
         "jellyfish",
         "openpyxl",
-        "sqlalchemy",
         "PyYAML"],
     packages=find_packages(),
     scripts=["scripts/sirad"]
