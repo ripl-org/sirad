@@ -33,15 +33,22 @@ def Research():
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
                              usecols=id_fields)
-            df["first_sdx"] = df["first_name"].apply(soundex)
+            df["first_sdx"] = np.nan
+            valid_name = df.first_name.notnull()
+            df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
             df["dsn"] = dataset.name
             pii.append(df)
 
+    stats = pd.DataFrame(index=datasets)
+
     print("Concatenating PII")
     pii = pd.concat(pii, ignore_index=True, sort=False)
+    stats["n_all_pii"] = pii["dsn"].value_counts()
 
     print("Matching DOB/names to distinct valid SSN")
-    dob_names = pii[pii.valid_ssn == 0]\
+    valid = ((pii.valid_ssn == 0) &
+             (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
+    dob_names = pii.loc[valid]\
                   .groupby(["dob", "last_name", "first_sdx"])\
                   .filter(lambda x: x.ssn.nunique() == 1)\
                   .groupby(["dob", "last_name", "first_sdx"])\
@@ -55,23 +62,31 @@ def Research():
     merged = pii.ssn_dob_names.notnull()
     pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
     pii.loc[merged, "valid_ssn"] = 0
+    stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
     print("Creating keys for valid SSNs")
     pii["key"] = np.nan
     valid_ssn = pii.valid_ssn == 0
     pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
+    stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 
     print("Creating keys for valid DOB/names")
-    valid_dob = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
-    pii.loc[valid_dob, "key"] = pii.loc[valid_dob].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
+    valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
+    pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
+    stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
 
     print("Generating SIRAD_ID as randomized dense rank over keys")
     key = pii.key[pii.key.notnull()].unique()
     np.random.shuffle(key)
     sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
     pii = pii.merge(sirad_id, on="key", how="left")
+    stats["n_ids"] = pii.loc[pii.sirad_id.notnull(), "dsn"].value_counts()
+
     pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
     pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
+
+    stats.to_csv(config.get_path("sirad_id_stats", "research"), index=False)
+    print(stats)
 
     for dataset in config.DATASETS:
         data_path = config.get_path(dataset.name, "data")

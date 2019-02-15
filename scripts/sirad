@@ -30,7 +30,7 @@ if "cmd" in args:
     if args.cmd == "process":
         from sirad.process import Process
         for dataset in config.DATASETS:
-            logging.info("Processing {}.".format(dataset.name))
+            logging.info("Processing {}".format(dataset.name))
             Process(dataset)
 
     elif args.cmd == "research":
@@ -43,4 +43,3 @@ elif args.version:
 
 else:
     parser.print_help()
-

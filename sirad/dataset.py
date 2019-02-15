@@ -86,7 +86,6 @@ class Dataset(object):
         # Setup paths
         self.source = os.path.join(config.get_option("RAW_DIR"), self.source)
 
-
     def get_reader(self):
         """
         Return either a CSV, fixed-format, or Excel reader depending on the dataset's type.

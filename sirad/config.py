@@ -56,7 +56,6 @@ class Config(object):
         setattr(self, "loaded", True)
 
 
-
 this_config = Config()
 
 
@@ -94,6 +93,7 @@ def parse_layouts():
     """
     for root, _, filenames in os.walk(get_option("LAYOUTS_DIR")):
         for filename in filenames:
+            logging.info("Loading config {}".format(filename))
             name = os.path.splitext(filename)[0]
             layout = yaml.load(open(os.path.join(root, filename)))
             DATASETS.append(Dataset(name, layout))
