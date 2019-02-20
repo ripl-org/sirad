@@ -5,7 +5,6 @@ import logging
 import os
 import sys
 import yaml
-from pathlib import Path
 
 from sirad.dataset import Dataset
 
@@ -74,9 +73,13 @@ def get_option(key):
 
 def get_path(name, subdir):
     path = os.path.join(get_option("{}_DIR".format(subdir.upper())),
-                        "{}_V{}".format(get_option("PROJECT"), get_option("VERSION")))
-    Path(path).mkdir(parents=True, exist_ok=True)
-    return os.path.join(path, "{}.txt".format(name))
+                        "{}_V{}".format(get_option("PROJECT"), get_option("VERSION")),
+                        "{}.txt".format(name))
+    d = os.path.dirname(path)
+    if not os.path.exists(d):
+        print("Creating output directory:", d)
+        os.makedirs(d)
+    return path
 
 
 def set_option(key, value):
@@ -94,6 +97,6 @@ def parse_layouts():
     for root, _, filenames in os.walk(get_option("LAYOUTS_DIR")):
         for filename in filenames:
             logging.info("Loading config {}".format(filename))
-            name = os.path.splitext(filename)[0]
+            name = os.path.join(root.partition("/")[2], os.path.splitext(filename)[0])
             layout = yaml.load(open(os.path.join(root, filename)))
             DATASETS.append(Dataset(name, layout))
