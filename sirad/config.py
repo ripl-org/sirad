@@ -100,3 +100,5 @@ def parse_layouts():
             name = os.path.join(root.partition("/")[2], os.path.splitext(filename)[0])
             layout = yaml.load(open(os.path.join(root, filename)))
             DATASETS.append(Dataset(name, layout))
+    DATASETS = sorted(DATASETS)
+
