@@ -29,15 +29,17 @@ def Research():
             has_id = True
             id_fields += ["first_name", "last_name", "dob"]
         if has_id:
-            datasets.add(dataset.name)
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
                              usecols=id_fields)
-            df["first_sdx"] = np.nan
-            valid_name = df.first_name.notnull()
-            df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
-            df["dsn"] = dataset.name
-            pii.append(df)
+            if len(df) > 0:
+                if "first_name" in columns:
+                    df["first_sdx"] = np.nan
+                    valid_name = df.first_name.notnull()
+                    df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
+                df["dsn"] = dataset.name
+                datasets.add(dataset.name)
+                pii.append(df)
 
     stats = pd.DataFrame(index=datasets)
 
@@ -85,7 +87,7 @@ def Research():
     pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
     pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
 
-    stats.to_csv(config.get_path("sirad_id_stats", "research"), index=False)
+    stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
     print(stats)
 
     for dataset in config.DATASETS:
