@@ -116,8 +116,9 @@ char_mapping = str.maketrans(char_mapping)
 
 class CsvReader(object):
 
-    def __init__(self, f, **kwargs):
-        self.reader = csv.reader(f, **kwargs)
+    def __init__(self, f, header, **kwargs):
+        self.reader = csv.DictReader(f, **kwargs)
+        self.header = header
 
     def __iter__(self):
         return self
@@ -125,7 +126,7 @@ class CsvReader(object):
     def __next__(self):
         row = next(self.reader)
         if row is not None:
-            row = [x.translate(char_mapping).strip() for x in row]
+            row = [row[x].translate(char_mapping).strip() for x in self.header]
         return row
 
     @property

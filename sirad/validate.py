@@ -1,58 +1,26 @@
-from datetime import date
-
-ssn_exclude = [
-    "012345678",
-    "123456789",
-    "234567890",
-    "345678901",
-    "456789012",
-    "567890123",
-    "678901234",
-    "789012345",
-    "890123456",
-    "901234567",
-    "987654321",
-    "987654320",
-    "987654329",
-    "219099999",
-    "078051120"
-    ]
-
-
-def ssn(raw, dob):
+def ssn(digits):
     """
     Clean SSN and check if valid using information from ssa.gov website
     See : https://www.ssa.gov/employer/stateweb.htm
     """
     valid = "0"
     invalid = "1"
-    maybe = "2"
-    ssn_digits = "".join(c for c in str(raw) if c.isdigit())
-    area = ssn_digits[0:3]
-    group = ssn_digits[3:5]
-    serial = ssn_digits[5:9]
-    if len(ssn_digits) != 9:
+    # Wrong length
+    if len(digits) != 9:
         return invalid
-    elif ssn_digits in ssn_exclude:
+    # Any component is all 0
+    elif digits[:3] == "000" or digits[3:5] == "00" or digits[5:9] == "0000":
         return invalid
     # Area 666
-    elif area in ["666"]:
+    elif digits[:3] == "666":
         return invalid
     # Areas 900-999
-    elif area.startswith("9"):
+    elif digits.startswith("9"):
         return invalid
-    else:
-        chunks = (area, group, serial)
-        # check for 0 only
-        for c in chunks:
-            if c.strip("0") == "":
-                return invalid
-    if dob is None:
-        return maybe
-    # Year and Area checks
-    elif dob < date(2011, 6, 25):
-        if ("587" <= area <= "679") or ("681" <= area <= "699") or ("734" <= area <= "899"):
-            return maybe
-        elif (dob > date(1963, 7, 1)) and ("700" <= area <= "728"):
-            return maybe
+    # used in an ad by the Social Security Administration
+    elif digits == "219099999":
+        return invalid
+    # Woolworth Wallet Fiasco
+    elif digits == "078051120":
+        return invalid
     return valid

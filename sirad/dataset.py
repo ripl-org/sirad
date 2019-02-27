@@ -74,12 +74,13 @@ class Dataset(object):
         # Setup column lists
         self.data_cols = [("record_id", "int")] + \
                          [(f.name, f.type) for f in self.fields if f.data] + \
-                         [("valid_{}".format(f.name), "int") for f in self.fields if (f.ssn and f.data)]
+                         [("{}_invalid".format(f.name), "int") for f in self.fields if (f.ssn and f.data)]
         self.pii_cols =  [("pii_id", "int")] + \
                          [(f.pii, f.type) for f in self.fields if f.pii] + \
-                         [("valid_{}".format(f.pii), "int") for f in self.fields if (f.ssn and f.pii)]
+                         [("{}_invalid".format(f.pii), "int") for f in self.fields if (f.ssn and f.pii)]
         self.link_cols = [("record_id", "int"), ("pii_id", "int")]
         # Setup headers
+        self.header      = [f.name for f in self.fields]
         self.data_header = [c[0] for c in self.data_cols]
         self.pii_header  = [c[0] for c in self.pii_cols]
         self.link_header = [c[0] for c in self.link_cols]
@@ -98,7 +99,7 @@ class Dataset(object):
                 column_offsets = [(fld.name, fld.offsets) for fld in self.fields if hasattr(fld, "offsets")]
                 reader = readers.fixed_reader(f, column_offsets)
             else:
-                reader = readers.csv_reader(f, delimiter=self.delimiter)
+                reader = readers.csv_reader(f, self.header, delimiter=self.delimiter)
             return reader, f
 
     def split(self):
@@ -114,12 +115,10 @@ class Dataset(object):
             append_data = []
             append_pii = []
             ssn_fields = []
-            dob_obj = None
             for value, field in zip(row, self.fields):
                 if field.ssn:
+                    value = "".join(c for c in str(value) if c.isdigit())
                     ssn_fields.append((value, field))
-                if field.pii == "dob":
-                    dob_obj = extract.dob(value, field)
                 data_value = extract.data(value, field)
                 pii_value = extract.pii(value, field)
                 if data_value is not None:
@@ -128,11 +127,11 @@ class Dataset(object):
                     out_pii.append(pii_value)
 
             for value, field in ssn_fields:
-                ssn_valid = validate.ssn(value, dob_obj)
+                ssn_invalid = validate.ssn(value)
                 if field.data:
-                    append_data.append(ssn_valid)
+                    append_data.append(ssn_invalid)
                 if field.pii:
-                    append_pii.append(ssn_valid)
+                    append_pii.append(ssn_invalid)
 
             yield out_data + append_data, out_pii + append_pii
 

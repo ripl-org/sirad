@@ -2,10 +2,10 @@ source: tax_fixed.txt
 type: fixed
 header: false
 fields:
-- first_name:
+- first:
     offsets: 10
     pii: first_name
-- last_name:
+- last:
     offsets: 10
     pii: last_name
 - ssn:
@@ -24,6 +24,5 @@ fields:
     offsets: 10
     type: date
     format: "%m/%d/%Y"
-- adjusted_gross_income:
+- agi:
     offsets: 6
-    type: int

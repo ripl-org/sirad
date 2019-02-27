@@ -2,9 +2,9 @@ source: tax.txt
 type: csv
 delimiter: "|"
 fields:
-- first_name:
+- first:
     pii: first_name
-- last_name:
+- last:
     pii: last_name
 - ssn:
     hash: true
@@ -18,5 +18,4 @@ fields:
 - file_date:
     type: date
     format: "%m/%d/%Y"
-- adjusted_gross_income:
-    type: int
+- agi

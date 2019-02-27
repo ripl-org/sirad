@@ -23,8 +23,8 @@ def Research():
         assert "pii_id" in columns
         if "ssn" in columns:
             has_id = True
-            assert "valid_ssn" in columns
-            id_fields += ["ssn", "valid_ssn"]
+            assert "ssn_invalid" in columns
+            id_fields += ["ssn", "ssn_invalid"]
         if "first_name" in columns and "last_name" in columns and "dob" in columns:
             has_id = True
             id_fields += ["first_name", "last_name", "dob"]
@@ -48,7 +48,7 @@ def Research():
     stats["n_all_pii"] = pii["dsn"].value_counts()
 
     print("Matching DOB/names to distinct valid SSN")
-    valid = ((pii.valid_ssn == 0) &
+    valid = ((pii.ssn_invalid == 0) &
              (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
     dob_names = pii.loc[valid]\
                   .groupby(["dob", "last_name", "first_sdx"])\
@@ -63,12 +63,12 @@ def Research():
                     suffixes=("", "_dob_names"))
     merged = pii.ssn_dob_names.notnull()
     pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
-    pii.loc[merged, "valid_ssn"] = 0
+    pii.loc[merged, "ssn_invalid"] = 0
     stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
     print("Creating keys for valid SSNs")
     pii["key"] = np.nan
-    valid_ssn = pii.valid_ssn == 0
+    valid_ssn = pii.ssn_invalid == 0
     pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
     stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 

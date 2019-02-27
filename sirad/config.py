@@ -94,11 +94,12 @@ def parse_layouts():
     """
     Parse YAML layout files in LAYOUTS directory.
     """
+    global DATASETS
     for root, _, filenames in os.walk(get_option("LAYOUTS_DIR")):
         for filename in filenames:
             logging.info("Loading config {}".format(filename))
             name = os.path.join(root.partition("/")[2], os.path.splitext(filename)[0])
             layout = yaml.load(open(os.path.join(root, filename)))
             DATASETS.append(Dataset(name, layout))
-    DATASETS = sorted(DATASETS)
+    DATASETS = sorted(DATASETS, key=lambda x: x.name)
 
