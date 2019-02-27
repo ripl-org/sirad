@@ -117,8 +117,11 @@ char_mapping = str.maketrans(char_mapping)
 class CsvReader(object):
 
     def __init__(self, f, header, **kwargs):
-        self.reader = csv.DictReader(f, **kwargs)
         self.header = header
+        if self.header:
+            self.reader = csv.DictReader(f, **kwargs)
+        else:
+            self.reader = csv.reader(f, **kwargs)
 
     def __iter__(self):
         return self
@@ -126,7 +129,10 @@ class CsvReader(object):
     def __next__(self):
         row = next(self.reader)
         if row is not None:
-            row = [row[x].translate(char_mapping).strip() for x in self.header]
+            if self.header:
+                row = [row[x].translate(char_mapping).strip() for x in self.header]
+            else:
+                row = [x.translate(char_mapping).strip() for x in row]
         return row
 
     @property
@@ -179,6 +185,11 @@ def fixed_reader(*args, **kwargs):
 
 ### Excel ###
 
-def xlsx_reader(filename, **kwargs):
+def xlsx_reader(filename, header, **kwargs):
     wb = load_workbook(filename=filename, read_only=True, keep_links=False)
-    return iter([["" if c.value is None else c.value for c in r] for r in wb.active.rows])
+    if header:
+        mapping = dict((c.value, i) for i, c in enumerate(next(wb.active.rows)))
+        columns = [mapping[c] for c in header]
+        return iter([["" if r[i].value is None else r[i].value for i in columns] for r in wb.active.rows])
+    else:
+        return iter([["" if c.value is None else c.value for c in r] for r in wb.active.rows])

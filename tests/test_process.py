@@ -36,9 +36,9 @@ class ThisTester(unittest.TestCase):
                 d[n] = row
         return d
 
-    def processed_xlsx_reader(self, path):
+    def processed_xlsx_reader(self, path, header):
         d = {}
-        for n, row in enumerate(xlsx_reader(path)):
+        for n, row in enumerate(xlsx_reader(path, header)):
             d[n] = row
         return d
 
@@ -56,7 +56,7 @@ class TestSplitTax(ThisTester):
     def setUp(self):
         super(TestSplitTax, self).setUp()
         self.data_file = get_file_path("raw", "tax.txt")
-        self.layout_file = self.load_layout("tax_layout.yaml")
+        self.layout_file = self.load_layout("tax.yaml")
 
     def test_process(self):
         dataset = Dataset("tax", self.layout_file)
@@ -92,7 +92,7 @@ class TestSplitTax(ThisTester):
 class TestSplitCredit(ThisTester):
     def setUp(self):
         self.data_file = get_file_path("raw", "credit_scores.txt")
-        self.layout_file = self.load_layout("credit_score_layout.yaml")
+        self.layout_file = self.load_layout("credit_score.yaml")
         super(TestSplitCredit, self).setUp()
 
     def test_process(self):
@@ -127,7 +127,7 @@ class TestSplitCredit(ThisTester):
 class TestSplitFixedTax(ThisTester):
     def setUp(self):
         self.data_file = get_file_path("raw", "tax_fixed.txt")
-        self.layout_file = self.load_layout("tax_fixed_layout.yaml")
+        self.layout_file = self.load_layout("tax_fixed.yaml")
         super(TestSplitFixedTax, self).setUp()
 
     def test_process(self):
@@ -154,7 +154,7 @@ class TestSplitFixedTax(ThisTester):
 class TestSplitCreditXLSX(ThisTester):
     def setUp(self):
         self.data_file = get_file_path("raw", "credit_scores.xlsx")
-        self.layout_file = self.load_layout("credit_score_layout.yaml")
+        self.layout_file = self.load_layout("credit_score_xlsx.yaml")
         super(TestSplitCreditXLSX, self).setUp()
 
     def test_process(self):
@@ -167,7 +167,7 @@ class TestSplitCreditXLSX(ThisTester):
         d_rows = self.processed_reader(df)
         l_rows = self.processed_reader(lf)
         p_rows = self.processed_reader(pf)
-        raw = self.processed_xlsx_reader(self.data_file)
+        raw = self.processed_xlsx_reader(self.data_file, dataset.header)
         # Excel reader converts values to integers. Test string value.
         raw_values = [(r[1], r[0], str(r[3])) for r in raw.values()]
 

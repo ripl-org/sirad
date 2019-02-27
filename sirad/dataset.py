@@ -80,7 +80,8 @@ class Dataset(object):
                          [("{}_invalid".format(f.pii), "int") for f in self.fields if (f.ssn and f.pii)]
         self.link_cols = [("record_id", "int"), ("pii_id", "int")]
         # Setup headers
-        self.header      = [f.name for f in self.fields]
+        if self.header:
+            self.header = [f.name for f in self.fields]
         self.data_header = [c[0] for c in self.data_cols]
         self.pii_header  = [c[0] for c in self.pii_cols]
         self.link_header = [c[0] for c in self.link_cols]
@@ -92,7 +93,8 @@ class Dataset(object):
         Return either a CSV, fixed-format, or Excel reader depending on the dataset's type.
         """
         if self.type == "xlsx":
-            return readers.xlsx_reader(self.source), None
+            f = open(self.source, "rb")
+            return readers.xlsx_reader(f, self.header), f
         else:
             f = open(self.source, "r", encoding=self.encoding, newline="")
             if self.type == "fixed":
@@ -107,8 +109,6 @@ class Dataset(object):
         Split the raw data. Yields separate data rows and pii rows.
         """
         reader, file_handle = self.get_reader()
-        if self.header:
-            next(reader)
         for row in reader:
             out_data = []
             out_pii = []
@@ -135,5 +135,4 @@ class Dataset(object):
 
             yield out_data + append_data, out_pii + append_pii
 
-        if file_handle is not None:
-            file_handle.close()
+        file_handle.close()

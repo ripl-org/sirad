@@ -1,6 +1,5 @@
 source: tax_fixed.txt
 type: fixed
-header: false
 fields:
 - first:
     offsets: 10

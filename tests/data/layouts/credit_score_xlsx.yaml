@@ -1,0 +1,12 @@
+source: credit_scores.xlsx
+type: xlsx
+fields:
+- first:
+    pii: first_name
+- last:
+    pii: last_name
+- birth_date:
+    pii: dob
+    type: date
+    format: "%m-%d-%Y"
+- credit_score
