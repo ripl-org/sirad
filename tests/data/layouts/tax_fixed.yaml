@@ -2,26 +2,26 @@ source: tax_fixed.txt
 type: fixed
 fields:
 - first:
-    offsets: 10
+    width: 10
     pii: first_name
 - last:
-    offsets: 10
+    width: 10
     pii: last_name
 - ssn:
-    offsets: 10
+    width: 10
     hash: true
     pii: ssn
     ssn: true
 - job:
-    offsets: 39
+    width: 39
 - birth_date:
-    offsets: 9
+    width: 9
     pii: dob
     type: date
     format: "%m-%d-%Y"
 - file_date:
-    offsets: 10
+    width: 10
     type: date
     format: "%m/%d/%Y"
 - agi:
-    offsets: 6
+    width: 6

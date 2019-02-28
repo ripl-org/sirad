@@ -16,7 +16,7 @@ class Field(object):
     Object for abstracting a field in a dataset.
     """
 
-    options = frozenset(("data", "format", "hash", "pii", "ssn", "type", "offsets", "skip"))
+    options = frozenset(("data", "format", "hash", "pii", "ssn", "type", "width", "skip"))
 
     def __init__(self, name, options={}, dataset=""):
         # Defaults
@@ -98,8 +98,8 @@ class Dataset(object):
         else:
             f = open(self.source, "r", encoding=self.encoding, newline="")
             if self.type == "fixed":
-                column_offsets = [(fld.name, fld.offsets) for fld in self.fields if hasattr(fld, "offsets")]
-                reader = readers.fixed_reader(f, column_offsets)
+                widths = [(fld.name, fld.width) for fld in self.fields if hasattr(fld, "width")]
+                reader = readers.fixed_reader(f, widths)
             else:
                 reader = readers.csv_reader(f, self.header, delimiter=self.delimiter)
             return reader, f

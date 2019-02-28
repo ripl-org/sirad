@@ -147,20 +147,20 @@ def csv_reader(*args, **kwargs):
 
 ### Fixed Width ###
 
-FixedField = namedtuple("Field", ["name", "start", "length"])
+FixedField = namedtuple("Field", ["name", "start", "end"])
 
 class FixedReader(object):
     """
     """
-    def __init__(self, f, field_offsets):
-        self.file = f
+    def __init__(self, f, widths):
+        self.f = f
         self.fields = []
 
         start = 0
-        for name, offset in field_offsets:
-            end = start + offset
+        for name, width in widths:
+            end = start + width
             self.fields.append(
-                FixedField(name, int(start), offset)
+                FixedField(name, start, end)
             )
             start = end
 
@@ -168,12 +168,12 @@ class FixedReader(object):
         return self
 
     def __next__(self):
-        line = next(self.file)
+        line = next(self.f)
 
         values = []
 
         for field in self.fields:
-            values.append(line[field.start:field.start + field.length].translate(char_mapping).strip())
+            values.append(line[field.start:field.end].translate(char_mapping).strip())
 
         return values
 
