@@ -192,6 +192,6 @@ def xlsx_reader(filename, header, **kwargs):
     if header:
         mapping = dict((c.value.strip(), i) for i, c in enumerate(next(wb.active.rows)))
         columns = [mapping[c] for c in header]
-        return iter([["" if r[i].value is None else r[i].value for i in columns] for r in wb.active.rows])
+        return iter([["" if r[i].value is None else r[i].value for i in columns] for r in wb.active.rows][1:])
     else:
         return iter([["" if c.value is None else c.value for c in r] for r in wb.active.rows])
