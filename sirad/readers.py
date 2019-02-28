@@ -120,6 +120,8 @@ class CsvReader(object):
         self.header = header
         if self.header:
             self.reader = csv.DictReader(f, **kwargs)
+            # Don't allow leading or trailing spaces in column names (unsupported in YAML format)
+            self.reader.fieldnames = list(map(str.strip, self.reader.fieldnames))
         else:
             self.reader = csv.reader(f, **kwargs)
 
@@ -188,7 +190,7 @@ def fixed_reader(*args, **kwargs):
 def xlsx_reader(filename, header, **kwargs):
     wb = load_workbook(filename=filename, read_only=True, keep_links=False)
     if header:
-        mapping = dict((c.value, i) for i, c in enumerate(next(wb.active.rows)))
+        mapping = dict((c.value.strip(), i) for i, c in enumerate(next(wb.active.rows)))
         columns = [mapping[c] for c in header]
         return iter([["" if r[i].value is None else r[i].value for i in columns] for r in wb.active.rows])
     else:
