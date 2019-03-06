@@ -131,11 +131,12 @@ class CsvReader(object):
 
     def __next__(self):
         row = next(self.reader)
-        if row is not None:
-            if self.header:
-                row = [row[x].translate(char_mapping).strip() for x in self.header]
-            else:
-                row = [x.translate(char_mapping).strip() for x in row]
+        if self.header:
+            row = [row[x].translate(char_mapping).strip() for x in self.header if row[x] is not None]
+        else:
+            row = [x.translate(char_mapping).strip() for x in row]
+        if len(row) != len(self.header):
+            return self.__next__()
         return row
 
     @property
