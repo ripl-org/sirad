@@ -44,7 +44,7 @@ def Research():
     stats = pd.DataFrame(index=datasets)
 
     print("Concatenating PII")
-    pii = pd.concat(pii, ignore_index=True, sort=False)
+    pii = pd.concat(pii, ignore_index=True)
     stats["n_all_pii"] = pii["dsn"].value_counts()
 
     print("Matching DOB/names to distinct valid SSN")

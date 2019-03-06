@@ -27,9 +27,9 @@ if "cmd" in args:
     logging.basicConfig(level=logging.INFO)
 
     from sirad import config
-    config.parse_layouts()
 
     if args.cmd == "process":
+        config.parse_layouts(process_log=True)
         from sirad.process import Process
         if args.n > 1:
             pool = multiprocessing.Pool(processes=args.n)
@@ -39,6 +39,7 @@ if "cmd" in args:
                 Process(dataset)
 
     elif args.cmd == "research":
+        config.parse_layouts()
         from sirad.research import Research
         Research()
 

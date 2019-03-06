@@ -26,49 +26,9 @@ DATE_FORMAT = "%Y-%m-%d"
 
 NULL_VALUES = frozenset(("", "NULL", "null", "NA", "na", "N/A", "#N/A", "NaN", "nan", ".", "#NULL!"))
 
+LOADED = False
 DATASETS = []
-
-
-class Config(object):
-
-    loaded = False
-
-    def setup(self):
-        """
-        Load sirad_config.py from working directory or Python path.
-        """
-        if self.loaded is True:
-            return
-        sys.path.insert(0, os.getcwd())
-        try:
-            import sirad_config as lc
-        except ImportError:
-            logging.info("No local config found")
-            setattr(self, "loaded", True)
-            return
-        config_key = _options.keys()
-        for ck in config_key:
-            try:
-                set_option(ck, getattr(lc, ck))
-            except AttributeError:
-                pass
-        setattr(self, "loaded", True)
-
-
-this_config = Config()
-
-
-def load_config(self):
-    """
-    Call load  - compatible with older style.
-    """
-    this_config.setup()
-
-
-def get_option(key):
-    if this_config.loaded is False:
-        this_config.setup()
-    return _options[key]
+FINISHED = []
 
 
 def get_path(name, subdir):
@@ -82,24 +42,79 @@ def get_path(name, subdir):
     return path
 
 
+def load_process_log():
+    """
+    Load an existing sirad.log to determine finished datasets.
+    """
+    global FINISHED
+    global _options
+    if "PROCESS_LOG" not in _options or not _options["PROCESS_LOG"]:
+        _options["PROCESS_LOG"] = os.path.join(_options["DATA_DIR"], "sirad.log")
+    if os.path.exists(_options["PROCESS_LOG"]):
+        with open(_options["PROCESS_LOG"]) as f:
+            FINISHED = frozenset([row.partition(",")[0] for row in f])
+    else:
+        d = os.path.dirname(_options["PROCESS_LOG"])
+        if not os.path.exists(d):
+            print("Creating output directory:", d)
+            os.makedirs(d)
+        with open(_options["PROCESS_LOG"], "w") as f:
+            f.write("DATASET,NROWS,ELAPSED\n")
+
+
+def load_config():
+    """
+    Load sirad_config.py from working directory or Python path.
+    """
+    global LOADED
+    if LOADED is True:
+        return
+    sys.path.insert(0, os.getcwd())
+    try:
+        import sirad_config as lc
+    except ImportError:
+        logging.info("No local config found")
+        LOADED = True
+        return
+    config_key = _options.keys()
+    for ck in config_key:
+        try:
+            set_option(ck, getattr(lc, ck))
+        except AttributeError:
+            pass
+    load_process_log()
+    LOADED = True
+
+
+def get_option(key):
+    if LOADED is False:
+        load_config()
+    return _options[key]
+
+
 def set_option(key, value):
+    global _options
     _options[key] = value
 
 
 def set_options(options):
+    global _options
     _options.update(options)
 
 
-def parse_layouts():
+def parse_layouts(process_log=False):
     """
     Parse YAML layout files in LAYOUTS directory.
     """
     global DATASETS
     for root, _, filenames in os.walk(get_option("LAYOUTS_DIR")):
         for filename in filenames:
-            logging.info("Loading config {}".format(filename))
             name = os.path.join(root.partition("/")[2], os.path.splitext(filename)[0])
-            layout = yaml.load(open(os.path.join(root, filename)))
-            DATASETS.append(Dataset(name, layout))
+            if process_log and name in FINISHED:
+                logging.info("Found process log for {}".format(name))
+            else:
+                layout = yaml.load(open(os.path.join(root, filename)))
+                DATASETS.append(Dataset(name, layout))
+                logging.info("Loaded config for {}".format(name))
     DATASETS = sorted(DATASETS, key=lambda x: x.name)
 

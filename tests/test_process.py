@@ -27,6 +27,7 @@ class ThisTester(unittest.TestCase):
         config.set_option("PII_SALT", "testcode")
         config.set_option("RAW_DIR", os.path.join(project_dir, "data", "raw"))
         config.set_option("PROJECT", "Test")
+        config.set_option("PROCESS_LOG", os.path.join(self.output_dir, "data", "sirad.log"))
         self.clean_up = True
 
     def processed_reader(self, path):

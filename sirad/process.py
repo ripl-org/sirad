@@ -6,12 +6,15 @@ import csv
 import logging
 import os
 import random
+import time
 
 from sirad import config
 
 def Process(dataset):
 
     logging.info("Processing {}".format(dataset.name))
+    nrows = 0
+    start = time.time()
 
     # Cache all pii rows, to later shuffle their record numbers
     prows = []
@@ -22,6 +25,7 @@ def Process(dataset):
         writer = csv.writer(f, dialect="sirad")
         writer.writerow(dataset.data_header)
         for record_id, (drow, prow) in enumerate(dataset.split(), start=1):
+            nrows += 1
             drow.insert(0, record_id)
             writer.writerow(drow)
             if dataset.has_pii:
@@ -45,5 +49,8 @@ def Process(dataset):
     else:
         pii_path  = None
         link_path = None
+
+    with open(config.get_option("PROCESS_LOG"), "a") as f:
+        print(dataset.name, nrows, "{:.3f}".format(time.time() - start), sep=",", file=f)
 
     return data_path, pii_path, link_path
