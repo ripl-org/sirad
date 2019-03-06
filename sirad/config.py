@@ -49,7 +49,9 @@ def load_process_log():
     global FINISHED
     global _options
     if "PROCESS_LOG" not in _options or not _options["PROCESS_LOG"]:
-        _options["PROCESS_LOG"] = os.path.join(_options["DATA_DIR"], "sirad.log")
+        _options["PROCESS_LOG"] = os.path.join(_options["DATA_DIR"],
+                                               "{}_V{}".format(_options["PROJECT"], _options["VERSION"]),
+                                               "process_log.csv")
     if os.path.exists(_options["PROCESS_LOG"]):
         with open(_options["PROCESS_LOG"]) as f:
             FINISHED = frozenset([row.partition(",")[0] for row in f])
