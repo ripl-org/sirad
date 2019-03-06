@@ -4,6 +4,7 @@ SIRAD - Secure Infrastructure for Research with Administrative Data
 """
 
 import argparse
+import multiprocessing
 import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -13,6 +14,7 @@ subparsers = parser.add_subparsers()
 
 process = subparsers.add_parser("process")
 process.set_defaults(cmd="process")
+process.add_argument("-n", type=int, default=1, help="number of processes to run in parallel")
 
 research = subparsers.add_parser("research")
 research.set_defaults(cmd="research")
@@ -29,9 +31,12 @@ if "cmd" in args:
 
     if args.cmd == "process":
         from sirad.process import Process
-        for dataset in config.DATASETS:
-            logging.info("Processing {}".format(dataset.name))
-            Process(dataset)
+        if args.n > 1:
+            pool = multiprocessing.Pool(processes=args.n)
+            pool.map(Process, config.DATASETS, chunksize=1)
+        else:
+            for dataset in config.DATASETS:
+                Process(dataset)
 
     elif args.cmd == "research":
         from sirad.research import Research

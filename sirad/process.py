@@ -3,12 +3,16 @@ Provides a method to process a dataset into data, pii, and link files.
 """
 
 import csv
+import logging
 import os
 import random
 
 from sirad import config
 
 def Process(dataset):
+
+    logging.info("Processing {}".format(dataset.name))
+
     # Cache all pii rows, to later shuffle their record numbers
     prows = []
 
