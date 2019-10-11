@@ -5,6 +5,8 @@ with open("README.md") as f:
 
 setup(
     name="sirad",
+    author="Mark Howison",
+    author_email="mhowison@ripl.org",
     version="0.2.0",
     url="https://github.com/ripl-org/sirad",
     description="Secure Infrastructure for Research with Administrative Data",
