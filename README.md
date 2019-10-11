@@ -15,7 +15,7 @@ uses, please see our article in *Communications of the ACM*:
 
 > J.S. Hastings, M. Howison, T. Lawless, J. Ucles, P. White. (2019).
 > Unlocking Data to Improve Public Policy. *Communications of the ACM* **62**(10): 48-53.
-> doi:[https://doi.org/10.1145/3335150](10.1145/3335150)
+> doi:[10.1145/3335150](https://doi.org/10.1145/3335150)
 
 ## Installation
 
