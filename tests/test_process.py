@@ -31,9 +31,9 @@ class ThisTester(unittest.TestCase):
         self.clean_up = True
 
     def processed_reader(self, path):
-        with open(path) as inf:
+        with open(path) as f:
             d = {}
-            for n, row in enumerate(csv.DictReader(inf, delimiter="|")):
+            for n, row in enumerate(csv.DictReader(f, delimiter="|")):
                 d[n] = row
         return d
 
@@ -45,8 +45,8 @@ class ThisTester(unittest.TestCase):
 
     def load_layout(self, name):
         path = get_file_path("layouts", name)
-        with open(path) as inf:
-            return yaml.load(inf)
+        with open(path) as f:
+            return yaml.safe_load(f)
 
     def tearDown(self):
         if self.clean_up is True:

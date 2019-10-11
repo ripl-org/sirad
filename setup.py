@@ -5,7 +5,7 @@ with open("README.md") as f:
 
 setup(
     name="sirad",
-    version="0.1.2",
+    version="0.2.0",
     url="https://github.com/ripl-org/sirad",
     description="Secure Infrastructure for Research with Administrative Data",
     long_description=long_description,
@@ -21,6 +21,7 @@ setup(
     provides=["sirad"],
     install_requires=[
         "openpyxl",
+        "pandas",
         "PyYAML"],
     packages=find_packages(),
     scripts=["scripts/sirad"]

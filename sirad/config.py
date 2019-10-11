@@ -115,7 +115,7 @@ def parse_layouts(process_log=False):
             if process_log and name in FINISHED:
                 logging.info("Found process log for {}".format(name))
             else:
-                layout = yaml.load(open(os.path.join(root, filename)))
+                layout = yaml.safe_load(open(os.path.join(root, filename)))
                 DATASETS.append(Dataset(name, layout))
                 logging.info("Loaded config for {}".format(name))
     DATASETS = sorted(DATASETS, key=lambda x: x.name)

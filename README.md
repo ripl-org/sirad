@@ -10,6 +10,13 @@ knowing the individual's identity. It is developed by
 For a worked example and further details, please see
 [sirad-example](https://github.com/ripl-org/sirad-example).
 
+To learn more about the motivation for creating this package and its potential
+uses, please see our article in *Communications of the ACM*:
+
+> J.S. Hastings, M. Howison, T. Lawless, J. Ucles, P. White. (2019).
+> Unlocking Data to Improve Public Policy. *Communications of the ACM* **62**(10): 48-53.
+> doi:[https://doi.org/10.1145/3335150](10.1145/3335150)
+
 ## Installation
 
 Requires Python 3.7 or later.
@@ -27,10 +34,9 @@ To install a **development version** from the current directory:
 There is a single command line script included, `sirad`.
 
 `sirad` supports the following arguments:
-* `process` - convert raw data files into deidentified files.
-* `stage` - stage the processed data files into a local sqlite database.
-* `research` - create a research version of the database, with a unique
-  anonymous identifier (sirad_id), with the staged tables.
+* `process` - split raw data files into data and PII files
+* `research` - create a versioned set of research files with a unique
+  anonymous identifier
 
 ## Configuration
 
@@ -47,15 +53,12 @@ The following options are available:
 * `PII_SALT`: secret salt used for hashing pii values. This shouldn't be
   shared. A warning will be issued if it is not set. Defaults to None.
 
-* `RAW`: default directory where raw data files are stored. Defaults to `raw/`.
-
 * `LAYOUTS`: directory that contains layout files. Defaults to `layouts/`.
 
-* `PROCESSED`: path to where processed files will be saved. Defaults to
-  `processed/`.
+* `RAW_DIR`, `DATA_DIR`, `PII_DIR`, `LINK_DIR`, `RESEARCH_DIR`: paths to where
+   the original data, the processed files, and the research files will be saved.
 
-* `RESEARCH`: the template for naming the `research` database. Defaults to
-  `research_{}.db`.
+* `VERSION`: the current version number of the processed and research files.
 
 ## Layout files
 
