@@ -29,5 +29,6 @@ setup(
         "pandas",
         "PyYAML"],
     packages=find_packages(),
+    package_data={"sirad": ["VERSION"]},
     scripts=["scripts/sirad"]
 )
