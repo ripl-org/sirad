@@ -51,10 +51,8 @@ def Research():
     valid = ((pii.ssn_invalid == 0) &
              (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
     dob_names = pii.loc[valid]\
-                  .groupby(["dob", "last_name", "first_sdx"])\
-                  .filter(lambda x: x.ssn.nunique() == 1)\
-                  .groupby(["dob", "last_name", "first_sdx"])\
-                  .agg({"ssn": "max"}).reset_index()
+                   .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\     # Keep first record for distinct name/DOB/SSN
+                   .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False) # Drop records that have more than one SSN per name/DOB
 
     print("Filling missing SSNs with DOB/name match")
     pii = pii.merge(dob_names,
