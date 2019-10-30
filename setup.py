@@ -3,11 +3,14 @@ from setuptools import setup, find_packages
 with open("README.md") as f:
     long_description = f.read()
 
+with open("sirad/VERSION") as f:
+    version = f.read().strip()
+
 setup(
     name="sirad",
     author="Mark Howison",
     author_email="mhowison@ripl.org",
-    version="0.2.0",
+    version=version,
     url="https://github.com/ripl-org/sirad",
     description="Secure Infrastructure for Research with Administrative Data",
     long_description=long_description,
@@ -26,5 +29,6 @@ setup(
         "pandas",
         "PyYAML"],
     packages=find_packages(),
+    package_data={"sirad": ["VERSION"]},
     scripts=["scripts/sirad"]
 )

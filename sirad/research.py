@@ -33,7 +33,7 @@ def Research():
                              sep="|",
                              usecols=id_fields)
             if len(df) > 0:
-                if "first_name" in columns:
+                if "first_name" in id_fields:
                     df["first_sdx"] = np.nan
                     valid_name = df.first_name.notnull()
                     df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
@@ -44,17 +44,17 @@ def Research():
     stats = pd.DataFrame(index=datasets)
 
     print("Concatenating PII")
-    pii = pd.concat(pii, ignore_index=True)
+    pii = pd.concat(pii, ignore_index=True, sort=False)
     stats["n_all_pii"] = pii["dsn"].value_counts()
 
     print("Matching DOB/names to distinct valid SSN")
     valid = ((pii.ssn_invalid == 0) &
              (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
+    # Keep first record for distinct name/DOB/SSN,
+    # then drop records that have more than one SSN per name/DOB
     dob_names = pii.loc[valid]\
-                  .groupby(["dob", "last_name", "first_sdx"])\
-                  .filter(lambda x: x.ssn.nunique() == 1)\
-                  .groupby(["dob", "last_name", "first_sdx"])\
-                  .agg({"ssn": "max"}).reset_index()
+                   .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
+                   .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
 
     print("Filling missing SSNs with DOB/name match")
     pii = pii.merge(dob_names,
@@ -96,8 +96,8 @@ def Research():
         if dataset.name in datasets:
             print("Attaching SIRAD_ID to", dataset.name)
             link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
-                    .sort_values("record_id")\
-                    .merge(pii.loc[dataset.name], on="pii_id", how="left")
+                     .sort_values("record_id")\
+                     .merge(pii.loc[[dataset.name]], on="pii_id", how="left")
             assert link.sirad_id.notnull().all()
             with open(data_path, "r") as f1, open(res_path, "w") as f2:
                 f2.write("sirad_id|{}".format(next(f1)))

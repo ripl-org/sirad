@@ -5,10 +5,14 @@ SIRAD - Secure Infrastructure for Research with Administrative Data
 
 import argparse
 import multiprocessing
+import sirad
 import sys
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--version", "-v", action="store_true")
+parser = argparse.ArgumentParser(description=sirad.__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("-v", "--version",
+                    action="version",
+                    version="SIRAD {}".format(sirad.__version__))
 
 subparsers = parser.add_subparsers()
 
@@ -43,9 +47,7 @@ if "cmd" in args:
         from sirad.research import Research
         Research()
 
-elif args.version:
-    from sirad import __version__
-    print("SIRAD version", __version__)
-
 else:
     parser.print_help()
+
+# vim: expandtab sw=4 ts=4
