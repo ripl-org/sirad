@@ -5,35 +5,122 @@ Create a research release.
 import numpy as np
 import os
 import pandas as pd
-from pathlib import Path
+import usaddress
 
 from sirad import config
 from sirad.soundex import soundex
 
-def Research():
+
+def _upper_alphanum(x):
     """
+    Remove non-uppercase/numeric characters.
+    For cleaning addresses.
     """
+    return "".join(c for c in x.upper() if c.isalnum() or c==" ")
+
+
+def _split_address(x):
+    """
+    Run usaddress tag method on full street address field to split it into
+    street name and number.
+    """
+    try:
+        return usaddress.tag(x)[0]
+    except usaddress.RepeatedLabelError:
+        return usaddress.tag("")[0]
+
+
+def Censuscode(dataset, prefix, addresses):
+    """
+    Determine the census blockgroup for an address based on
+    zip code, street name, and street number.
+    """
+    filename = 
+
+
+def Addresses(dataset):
+    """
+    Identify and clean address PII fields, perform censuscoding,
+    and return the paths to censuscoded output in the PII directory.
+    """
+
+    print("Loading address PII from", dataset.name)
+    columns = frozenset(dataset.pii_header)
+    assert "pii_id" in columns
+    output = []
+
+    # Loop over address type.
+    for t in ("home", "employer"):
+
+        address_fields = ["pii_id"]
+
+        # Identify which address PII fields are present in the data set.
+        contains = dict((name, "{}_{}".format(t, name) in columns)
+                         for name in ("zip5", "zip9", "city", "address", "street", "street_num"))
+
+        # Census coding requires a zip code and street name at a minimum
+        if (contains["zip5"] or contains["zip9"]) and (contains["address"] or contains["street"]):
+            address_fields += sorted(name for name in contains if contains[name])
+
+        # If address PII fields are present, load them from the PII file.
+        if len(address_fields) > 1:
+            df = pd.read_csv(config.get_path(dataset.name, "pii"),
+                             sep="|",
+                             usecols=address_fields)
+        if len(df) > 0:
+            zip = "{}_zip5".format(t)
+            street = "{}_street".format(t)
+            street_num = "{}_street_num".format(t)
+            if contains["zip9"] and not contains["zip5"]:
+                df[zip] = df["{}_zip9".format(t)].astype(str).str.slice(5).astype(int)
+            if contains["address"]:
+                address = pd.DataFrame(df["{}_address".format(t)].apply(_upper_alphanum).apply(_split_address).tolist())
+                df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
+                df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
+            if zip in df.columns and street in df.columns and street_num in df.columns:
+                output.append(Censuscode(dataset, t, df[["pii_id", zip, street, street_num]]))
+
+    # Merge address types into a single output dataframe.
+    if len(output) == 1:
+        return output[0]
+    elif len(output) > 1:
+        return reduce(lambda x, y: x.merge(y, on="pii_id", how="outer"), output)
+    else:
+        return None
+
+
+def SiradID():
+    """
+    Stack PII from all data sets to construct a global anonymous ID
+    called the SIRAD ID.
+    """
+
     datasets = set()
     pii = []
+
     for dataset in [d for d in config.DATASETS if d.has_pii]:
+
         print("Loading PII from", dataset.name)
         columns = frozenset(dataset.pii_header)
         id_fields = ["pii_id"]
-        has_id = False
         assert "pii_id" in columns
+
+        # Identify which PII columns are present.
         if "ssn" in columns:
-            has_id = True
             assert "ssn_invalid" in columns
             id_fields += ["ssn", "ssn_invalid"]
         if "first_name" in columns and "last_name" in columns and "dob" in columns:
-            has_id = True
             id_fields += ["first_name", "last_name", "dob"]
-        if has_id:
+
+        # Either the SSN or name/DOB fields must be available to construct
+        # a SIRAD ID for the dataset.
+        if len(id_fields) > 1:
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
                              usecols=id_fields)
             if len(df) > 0:
                 if "first_name" in id_fields:
+                    # Convert first name to Soundex value.
                     df["first_sdx"] = np.nan
                     valid_name = df.first_name.notnull()
                     df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
@@ -41,6 +128,7 @@ def Research():
                 datasets.add(dataset.name)
                 pii.append(df)
 
+    # Keep track of statistics while constructing the SIRAD ID.
     stats = pd.DataFrame(index=datasets)
 
     print("Concatenating PII")
@@ -87,25 +175,67 @@ def Research():
     pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
     pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
 
+    # Save SIRAD ID statistics to a file in the research output directory.
     stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
     print(stats)
 
+    return pii
+
+
+def Research():
+    """
+    Concurrently generate the SIRAD ID and perform censuscoding using PII,
+    then attach the results to the deidentified data files to generate the
+    final anonymoized research release.
+    """
+
+    # Start SIRAD ID in one thread.
+    ids = SiradID()
+    id_dsns = frozenset(ids.index)
+
+    # Addresses
+    for dataset in [d for d in config.DATASETS if d.has_pii]:
+
+    # Attach SIRAD ID and/or addresses to each data set to produce the
+    # final set of research files.
     for dataset in config.DATASETS:
+
+        # Setup paths
         data_path = config.get_path(dataset.name, "data")
         res_path = config.get_path(dataset.name, "research")
-        if dataset.name in datasets:
+
+        # Identify SIRAD ID and/or address links.
+        link = None
+        if dataset.name in id_dsns:
             print("Attaching SIRAD_ID to", dataset.name)
             link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
                      .sort_values("record_id")\
-                     .merge(pii.loc[[dataset.name]], on="pii_id", how="left")
+                     .merge(ids.loc[[dataset.name]], on="pii_id", how="left")
             assert link.sirad_id.notnull().all()
+        if dataset.name in addresses:
+            print("Attaching censuscoded addresses to", dataset.name)
+            if link is None:
+                link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
+                         .sort_values("record_id")
+            link = link.merge(pd.read_csv(addresses[dataset.name], sep="|"),
+                              on="pii_id", how="left")
+
+        # Write out a new research file with attached data if available,
+        # otherwise use the data file as-is via a hard link.
+        if link:
             with open(data_path, "r") as f1, open(res_path, "w") as f2:
-                f2.write("sirad_id|{}".format(next(f1)))
-                for row, ids in zip(f1, link.itertuples()):
-                    assert int(row.partition("|")[0]) == ids.record_id
-                    f2.write("{}|{}".format(ids.sirad_id, row))
+                f2.write("|".join(link.columns[2:])
+                f2.write("|")
+                f2.write(next(f1))
+                for link_row, data_row in zip(link.itertuples(), f1):
+                    assert int(data_row.partition("|")[0]) == link_row.record_id
+                    f2.write("|".join(link_row[2:]))
+                    f2.write("|")
+                    f2.write(data_row)
         else:
             print("Hard-linking", dataset.name)
             if os.path.exists(res_path):
                 os.unlink(res_path)
             os.link(data_path, res_path)
+
+
