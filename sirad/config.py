@@ -16,6 +16,7 @@ _options = {
     "PII_DIR": "pii",
     "LINK_DIR": "link",
     "RESEARCH_DIR": "research",
+    "CENSUS_DIR": "census",
     "VERSION": 1,
     "PROJECT": "",
     "DATA_SALT": None,

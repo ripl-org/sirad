@@ -11,14 +11,6 @@ from sirad import config
 from sirad.soundex import soundex
 
 
-def _upper_alphanum(x):
-    """
-    Remove non-uppercase/numeric characters.
-    For cleaning addresses.
-    """
-    return "".join(c for c in x.upper() if c.isalnum() or c==" ")
-
-
 def _split_address(x):
     """
     Run usaddress tag method on full street address field to split it into
@@ -35,7 +27,45 @@ def Censuscode(dataset, prefix, addresses):
     Determine the census blockgroup for an address based on
     zip code, street name, and street number.
     """
-    filename = 
+
+    filename = config.get_path(dataset.name, "pii").rpartition(".")[0] + ".censuscode.txt"
+    logname = config.get_path(dataset.name, "research").rpartition(".")[0] + ".censuscode.log"
+    N = [len(addresses)]
+    geo_level = "BlockGroup"
+
+    with open(logname, "w") as log:
+
+        # Load the lookup files.
+        streets = pd.read_csv(street_file)
+        print(len(streets), "distinct street names", file=log)
+        nums = pd.read_csv(num_file)
+        print(len(nums), "distinct street name/numbers", file=log)
+
+        # Build range look-up for street nums.
+        num_lookup = {}
+        for index, group in nums.groupby(["street", "zip"]):
+            group = group.sort_values("street_num")
+            num_lookup[index] = (group.street_num.values, group[geo_level].values)
+        print(len(num_lookup), "look-ups for street number ranges", file=log)
+
+        # Only retain records with valid integer zip codes.
+        addresses["zip"] 
+        addresses["zip"] = addresses.zip.astype(int)
+        addresses = addresses[addresses.zip.isin(streets.zip.unique())]
+        N.append(len(addresses))
+        print(N[-1], "records with valid zip codes")
+
+        # Merge on distinct street name.
+        addresses["street"] = addresses.street.str.upper().str.extract("([0-9A-Z ]+)", expand=False)
+        addresses = addresses[addresses.street.notnull()]
+        N.append(len(addresses))
+        print("removed", N[-2] - N[-1], "records with missing street name")
+
+
+
+
+
+
 
 
 def Addresses(dataset):
@@ -74,7 +104,7 @@ def Addresses(dataset):
             if contains["zip9"] and not contains["zip5"]:
                 df[zip] = df["{}_zip9".format(t)].astype(str).str.slice(5).astype(int)
             if contains["address"]:
-                address = pd.DataFrame(df["{}_address".format(t)].apply(_upper_alphanum).apply(_split_address).tolist())
+                address = pd.DataFrame(df["{}_address".format(t)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).apply(_split_address).tolist())
                 df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
                 df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
             if zip in df.columns and street in df.columns and street_num in df.columns:
