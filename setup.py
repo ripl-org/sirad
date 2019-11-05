@@ -27,7 +27,8 @@ setup(
     install_requires=[
         "openpyxl",
         "pandas",
-        "PyYAML"],
+        "PyYAML",
+        "usaddress"],
     packages=find_packages(),
     package_data={"sirad": ["VERSION"]},
     scripts=["scripts/sirad"]
