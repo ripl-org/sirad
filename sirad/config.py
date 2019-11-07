@@ -16,6 +16,8 @@ _options = {
     "PII_DIR": "pii",
     "LINK_DIR": "link",
     "RESEARCH_DIR": "research",
+    "CENSUS_STREET_FILE": "census/streets.csv",
+    "CENSUS_STREET_NUM_FILE": "census/street_nums.csv",
     "VERSION": 1,
     "PROJECT": "",
     "DATA_SALT": None,

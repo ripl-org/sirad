@@ -13,15 +13,16 @@ parser = argparse.ArgumentParser(description=sirad.__doc__,
 parser.add_argument("-v", "--version",
                     action="version",
                     version="SIRAD {}".format(sirad.__version__))
+parser.add_argument("-n", type=int, default=1, help="number of threads to use in parallel")
 
 subparsers = parser.add_subparsers()
 
 process = subparsers.add_parser("process")
 process.set_defaults(cmd="process")
-process.add_argument("-n", type=int, default=1, help="number of processes to run in parallel")
 
 research = subparsers.add_parser("research")
 research.set_defaults(cmd="research")
+research.add_argument("--seed", type=int, default=0, help="random seed for reproducible SIRAD ID [default: none]")
 
 args = parser.parse_args()
 
@@ -45,7 +46,7 @@ if "cmd" in args:
     elif args.cmd == "research":
         config.parse_layouts()
         from sirad.research import Research
-        Research()
+        Research(args.n, args.seed)
 
 else:
     parser.print_help()
