@@ -131,7 +131,7 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records remaining", file=log)
 
-        info("Merge 3 on street with street number range search")
+        info("Merge 3 with street number range search")
         merged = []
         for _, row in addresses.iterrows():
             l = num_lookup.get((row[street], row[zip]))
@@ -151,8 +151,8 @@ def Censuscode(dataset, prefix, addresses):
 
 def Addresses(dataset):
     """
-    Identify and clean address PII fields, perform censuscoding,
-    and return the paths to censuscoded output in the PII directory.
+    Identify and clean address PII fields and perform censuscoding
+    if sufficient address components are available.
     """
     columns = frozenset(dataset.pii_header)
     assert "pii_id" in columns
@@ -405,4 +405,6 @@ def Research(nthreads=1, seed=0):
             if os.path.exists(res_path):
                 os.unlink(res_path)
             os.link(data_path, res_path)
+
+    info("Done")
 
