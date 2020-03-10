@@ -55,11 +55,11 @@ def Censuscode(dataset, prefix, addresses):
     with open(logname, "w") as log:
 
         # Load the lookup files.
-        streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"))\
+        streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"), low_memory=False)\
                     .rename(columns={geo_level[0]: geo_level[1]})\
                     .drop_duplicates(["street", "zip"])
         print(len(streets), "distinct street names", file=log)
-        nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"))\
+        nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"), low_memory=False)\
                  .rename(columns={geo_level[0]: geo_level[1]})\
                  .drop_duplicates(["street_num", "street", "zip"])
         print(len(nums), "distinct street name/numbers", file=log)
@@ -179,7 +179,8 @@ def Addresses(dataset):
         if len(address_fields) > 1:
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
-                             usecols=address_fields)
+                             usecols=address_fields,
+                             low_memory=False)
         if len(df) > 0:
             zip = "{}_zip5".format(prefix)
             city = "{}_city".format(prefix)
@@ -237,7 +238,8 @@ def SiradID():
         if len(id_fields) > 1:
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
-                             usecols=id_fields)
+                             usecols=id_fields,
+                             low_memory=False)
             if len(df) > 0:
                 if "first_name" in id_fields:
                     # Convert first name to Soundex value.
@@ -341,7 +343,7 @@ def Research(nthreads=1, seed=0):
         link = None
         if dataset.name in id_dsns:
             print("Attaching SIRAD_ID to", dataset.name)
-            link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
+            link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|", low_memory=False)\
                      .sort_values("record_id")\
                      .merge(ids.loc[[dataset.name]], on="pii_id", how="left")
             assert link.sirad_id.notnull().all()
@@ -350,9 +352,9 @@ def Research(nthreads=1, seed=0):
             if os.path.exists(filename):
                 print("Attaching censuscoded", prefix, "addresses to", dataset.name)
                 if link is None:
-                    link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
+                    link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|", low_memory=False)\
                              .sort_values("record_id")
-                link = link.merge(pd.read_csv(filename), on="pii_id", how="left")
+                link = link.merge(pd.read_csv(filename, low_memory=False), on="pii_id", how="left")
 
         # Write out a new research file with attached data if available,
         # otherwise use the data file as-is via a hard link.
