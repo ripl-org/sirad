@@ -17,6 +17,9 @@ parser.add_argument("-n", type=int, default=1, help="number of threads to use in
 
 subparsers = parser.add_subparsers()
 
+process = subparsers.add_parser("sources")
+process.set_defaults(cmd="sources")
+
 process = subparsers.add_parser("validate")
 process.set_defaults(cmd="validate")
 
@@ -36,7 +39,12 @@ if "cmd" in args:
 
     from sirad import config
 
-    if args.cmd == "validate":
+    if args.cmd == "sources":
+        config.parse_layouts()
+        for dataset in config.DATASETS:
+            print(dataset.source)
+
+    elif args.cmd == "validate":
         config.parse_layouts()
         from sirad.validate import Validate
         if args.n > 1:
