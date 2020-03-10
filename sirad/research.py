@@ -186,7 +186,7 @@ def Addresses(dataset):
                 street_num = "{}_street_num".format(prefix)
 
                 if contains["zip9"] and not contains["zip5"]:
-                    df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5).astype(int)
+                    df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5)
 
                 if contains["address"]:
                     address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).apply(_split_address).tolist())
