@@ -24,14 +24,16 @@ def Validate(dataset):
         wb.close()
     if firstline is not None:
         if dataset.header:
-            firstline = frozenset(firstline)
+            fields = frozenset(firstline)
             for f in dataset.fields:
-                if f.name.upper() not in firstline:
+                if f.name.upper() not in fields:
                     logging.warn("Dataset {} has no column named {}".format(dataset.name, f.name.upper()))
                     nwarnings += 1
         else:
             if len(firstline) != len(dataset.fields):
                 logging.warn("Dataset {} has {} columns in layout and {} columns in the raw file".format(dataset.name, len(dataset.fields), len(firstline)))
                 nwarnings += 1
+    if nwarnings:
+        logging.info("Header for {}: {}".format(dataset.name, str(firstline)))
 
     return nwarnings
