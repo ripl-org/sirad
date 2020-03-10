@@ -17,6 +17,9 @@ parser.add_argument("-n", type=int, default=1, help="number of threads to use in
 
 subparsers = parser.add_subparsers()
 
+process = subparsers.add_parser("validate")
+process.set_defaults(cmd="validate")
+
 process = subparsers.add_parser("process")
 process.set_defaults(cmd="process")
 
@@ -33,7 +36,18 @@ if "cmd" in args:
 
     from sirad import config
 
-    if args.cmd == "process":
+    if args.cmd == "validate":
+        config.parse_layouts()
+        from sirad.validate import Validate
+        if args.n > 1:
+            pool = multiprocessing.Pool(processes=args.n)
+            nwarnings = sum(pool.map(Validate, config.DATASETS, chunksize=1))
+        else:
+            nwarnings = sum(map(Validate, config.DATASETS))
+        if nwarnings > 0:
+            sys.exit(1)
+
+    elif args.cmd == "process":
         config.parse_layouts(process_log=True)
         from sirad.process import Process
         if args.n > 1:
