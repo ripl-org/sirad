@@ -12,9 +12,7 @@ import usaddress
 from sirad import config
 from sirad.soundex import soundex
 
-
 _address_prefixes = ("home", "employer")
-
 
 def _split_address(x):
     """
@@ -156,14 +154,13 @@ def Addresses(dataset):
     Identify and clean address PII fields, perform censuscoding,
     and return the paths to censuscoded output in the PII directory.
     """
-
-    print("Loading address PII from", dataset.name)
     columns = frozenset(dataset.pii_header)
     assert "pii_id" in columns
     output = []
 
     # Loop over address type.
     for prefix in _address_prefixes:
+        info = logging.getLogger(":".join([__name__, "addresses", prefix, dataset.name])).info
 
         address_fields = ["pii_id"]
 
@@ -181,33 +178,39 @@ def Addresses(dataset):
                              sep="|",
                              usecols=address_fields,
                              low_memory=False)
-        if len(df) > 0:
-            zip = "{}_zip5".format(prefix)
-            city = "{}_city".format(prefix)
-            street = "{}_street".format(prefix)
-            street_num = "{}_street_num".format(prefix)
-            if contains["zip9"] and not contains["zip5"]:
-                df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5).astype(int)
-            if contains["address"]:
-                address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).apply(_split_address).tolist())
-                if "StreetNamePreDirectional" in address.columns:
-                    df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
+
+            if len(df) > 0:
+                zip = "{}_zip5".format(prefix)
+                city = "{}_city".format(prefix)
+                street = "{}_street".format(prefix)
+                street_num = "{}_street_num".format(prefix)
+
+                if contains["zip9"] and not contains["zip5"]:
+                    df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5).astype(int)
+
+                if contains["address"]:
+                    address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).apply(_split_address).tolist())
+                    if "StreetNamePreDirectional" in address.columns:
+                        df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
+                    else:
+                        df[street] = address.StreetName
+                    df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
+
+                if zip in df.columns and street in df.columns and street_num in df.columns:
+                    if not contains["city"]:
+                        df[city] = ""
+                    info(" running censuscoding")
+                    Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
+
                 else:
-                    df[street] = address.StreetName
-                df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
-            if zip in df.columns and street in df.columns and street_num in df.columns:
-                if not contains["city"]:
-                    df[city] = ""
-                logging.info("Censuscoding {} {} addresses".format(dataset.name, prefix))
-                Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
-            else:
-                logging.info(
-                    "Unable to censuscode {} {} addresses (zip: {}, street: {}, street_num: {})".format(
-                        dataset.name,
-                        prefix,
+                    info(" cannot run censuscoding (zip: {}, street: {}, street_num: {})".format(
                         zip in df.columns,
                         street in df.columns,
                         street_num in df.columns))
+            else:
+                info(" no PII records")
+        else:
+            info(" not enough address PII columns ({})".format(str(contains)))
 
 
 def SiradID():
