@@ -3,7 +3,6 @@ Create a research release.
 """
 
 import logging
-import multiprocessing
 import numpy as np
 import os
 import pandas as pd
@@ -11,6 +10,7 @@ import usaddress
 
 from sirad import config
 from sirad.soundex import soundex
+from multiprocessing import Process, Queue
 
 _address_prefixes = ("home", "employer")
 
@@ -210,7 +210,10 @@ def Addresses(dataset):
             else:
                 info(" no PII records")
         else:
-            info(" not enough address PII columns ({})".format(str(contains)))
+            if sum(contains.values()) == 0:
+                info(" no address PII columns")
+            else:
+                info(" not enough address PII columns ({})".format(str(contains)))
 
 
 def SiradID():
@@ -307,6 +310,19 @@ def SiradID():
     return pii
 
 
+def ResearchWorker(tasks, results):
+    """
+    Helper function for concurrently running Addresses and SiradID.
+    """
+    while not tasks.empty():
+        task = tasks.get()
+        if task[0] == "SiradID":
+            ids = SiradID()
+            results.put(ids)
+        elif task[0] == "Addresses":
+            Addresses(task[1])
+
+
 def Research(nthreads=1, seed=0):
     """
     Concurrently generate the SIRAD ID and perform censuscoding using PII,
@@ -317,25 +333,35 @@ def Research(nthreads=1, seed=0):
     if seed:
         np.random.seed(seed)
 
-    # Concurrently run geocoder if multiple threads are available.
+    # Concurrently run Addresses and SiradID if multiple threads are available.
     if nthreads > 1:
-        pool = multiprocessing.Pool(nthreads-1)
-        pool.map_async(Addresses, [d for d in config.DATASETS if d.has_pii])
-        pool.close()
+        # Define tasks
+        tasks = Queue()
+        for dataset in config.DATASETS:
+           if dataset.has_pii:
+               tasks.put(("Addresses", dataset))
+        tasks.put(("SiradID",))
+        # Run tasks
+        results = Queue()
+        pool = []
+        for n in range(nthreads):
+            p = Process(target=ResearchWorker, args=(tasks, results))
+            pool.append(p)
+            p.start()
+        for p in pool:
+            p.join()
+        ids = results.get() # Only the SiradID process returns a result
     else:
         for dataset in config.DATASETS:
            if dataset.has_pii:
                Addresses(dataset)
-
-    # Start SIRAD ID in main thread.
-    ids = SiradID()
-    id_dsns = frozenset(ids.index)
-
-    if nthreads > 1:
-        pool.join()
+        ids = SiradID()
 
     # Attach SIRAD ID and/or addresses to each data set to produce the
     # final set of research files.
+
+    id_dsns = frozenset(ids.index)
+
     for dataset in config.DATASETS:
 
         # Setup paths
@@ -377,5 +403,4 @@ def Research(nthreads=1, seed=0):
             if os.path.exists(res_path):
                 os.unlink(res_path)
             os.link(data_path, res_path)
-
 
