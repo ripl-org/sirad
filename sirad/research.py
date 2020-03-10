@@ -14,6 +14,7 @@ from multiprocessing import Process, Queue
 
 _address_prefixes = ("home", "employer")
 
+
 def _split_address(x):
     """
     Run usaddress tag method on full street address field to split it into
@@ -190,7 +191,7 @@ def Addresses(dataset):
                     df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5)
 
                 if contains["address"]:
-                    address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).apply(_split_address).tolist())
+                    address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).fillna("").apply(_split_address).tolist())
                     if "StreetNamePreDirectional" in address.columns:
                         df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
                     else:
