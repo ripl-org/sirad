@@ -2,6 +2,7 @@
 Create a research release.
 """
 
+import logging
 import multiprocessing
 import numpy as np
 import os
@@ -196,7 +197,16 @@ def Addresses(dataset):
             if zip in df.columns and street in df.columns and street_num in df.columns:
                 if not contains["city"]:
                     df[city] = ""
+                logging.info("Censuscoding {} {} addresses".format(dataset.name, prefix))
                 Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
+            else:
+                logging.info(
+                    "Unable to censuscode {} {} addresses (zip: {}, street: {}, street_num: {})".format(
+                        dataset.name,
+                        prefix,
+                        zip in df.columns,
+                        street in df.columns,
+                        street_num in df.columns))
 
 
 def SiradID():
