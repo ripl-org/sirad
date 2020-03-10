@@ -39,7 +39,7 @@ def get_path(name, subdir):
                         "{}.txt".format(name))
     d = os.path.dirname(path)
     if not os.path.exists(d):
-        print("Creating output directory:", d)
+        logging.info("Creating output directory: " + d)
         os.makedirs(d, exist_ok=True)
     return path
 
@@ -60,7 +60,7 @@ def load_process_log():
     else:
         d = os.path.dirname(_options["PROCESS_LOG"])
         if not os.path.exists(d):
-            print("Creating output directory:", d)
+            logging.info("Creating output directory: " + d)
             os.makedirs(d, exist_ok=True)
         with open(_options["PROCESS_LOG"], "w") as f:
             f.write("DATASET,NROWS,ELAPSED\n")
