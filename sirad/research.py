@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import usaddress
 
-from sirad import config
+from sirad import config, Log
 from sirad.soundex import soundex
 from multiprocessing import Process, Queue
 
@@ -160,7 +160,8 @@ def Addresses(dataset):
 
     # Loop over address type.
     for prefix in _address_prefixes:
-        info = logging.getLogger(":".join([__name__, "addresses", prefix, dataset.name])).info
+
+        info = Log(__name__, "Addresses", prefix, dataset.name).info
 
         address_fields = ["pii_id"]
 
@@ -199,21 +200,21 @@ def Addresses(dataset):
                 if zip in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
                         df[city] = ""
-                    info(" running censuscoding")
+                    info("Running censuscoding")
                     Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
 
                 else:
-                    info(" cannot run censuscoding (zip: {}, street: {}, street_num: {})".format(
+                    info("Cannot run censuscoding (zip: {}, street: {}, street_num: {})".format(
                         zip in df.columns,
                         street in df.columns,
                         street_num in df.columns))
             else:
-                info(" no PII records")
+                info("No PII records")
         else:
             if sum(contains.values()) == 0:
-                info(" no address PII columns")
+                info("No address PII columns")
             else:
-                info(" not enough address PII columns ({})".format(str(contains)))
+                info("Not enough address PII columns ({})".format(str(contains)))
 
 
 def SiradID():
@@ -329,6 +330,7 @@ def Research(nthreads=1, seed=0):
     then attach the results to the deidentified data files to generate the
     final anonymoized research release.
     """
+    info = Log(__name__, "Research").info
 
     if seed:
         np.random.seed(seed)
@@ -371,7 +373,7 @@ def Research(nthreads=1, seed=0):
         # Identify SIRAD ID and/or address links.
         link = None
         if dataset.name in id_dsns:
-            print("Attaching SIRAD_ID to", dataset.name)
+            info("Attaching SIRAD_ID to", dataset.name)
             link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|", low_memory=False)\
                      .sort_values("record_id")\
                      .merge(ids.loc[[dataset.name]], on="pii_id", how="left")
@@ -379,7 +381,7 @@ def Research(nthreads=1, seed=0):
         for prefix in _address_prefixes:
             filename = "{}.censuscode.{}.csv".format(config.get_path(dataset.name, "pii").rpartition(".")[0], prefix)
             if os.path.exists(filename):
-                print("Attaching censuscoded", prefix, "addresses to", dataset.name)
+                info("Attaching censuscoded", prefix, "addresses to", dataset.name)
                 if link is None:
                     link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|", low_memory=False)\
                              .sort_values("record_id")
@@ -399,7 +401,7 @@ def Research(nthreads=1, seed=0):
                     f2.write("|")
                     f2.write(data_row)
         else:
-            print("Hard-linking", dataset.name)
+            info("Hard-linking", dataset.name)
             if os.path.exists(res_path):
                 os.unlink(res_path)
             os.link(data_path, res_path)
