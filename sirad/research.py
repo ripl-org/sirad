@@ -2,7 +2,6 @@
 Create a research release.
 """
 
-import logging
 import numpy as np
 import os
 import pandas as pd
@@ -223,13 +222,14 @@ def SiradID():
     Stack PII from all data sets to construct a global anonymous ID
     called the SIRAD ID.
     """
-
+    info = Log(__name__, "SiradID").info
     datasets = set()
     pii = []
 
     for dataset in [d for d in config.DATASETS if d.has_pii]:
 
-        print("Loading PII from", dataset.name)
+
+        info("Loading PII for", dataset.name)
         columns = frozenset(dataset.pii_header)
         id_fields = ["pii_id"]
         assert "pii_id" in columns
@@ -261,11 +261,11 @@ def SiradID():
     # Keep track of statistics while constructing the SIRAD ID.
     stats = pd.DataFrame(index=datasets)
 
-    print("Concatenating PII")
+    info("Concatenating PII")
     pii = pd.concat(pii, ignore_index=True, sort=False)
     stats["n_all_pii"] = pii["dsn"].value_counts()
 
-    print("Matching DOB/names to distinct valid SSN")
+    info("Matching DOB/names to distinct valid SSN")
     valid = ((pii.ssn_invalid == 0) &
              (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
     # Keep first record for distinct name/DOB/SSN,
@@ -274,7 +274,7 @@ def SiradID():
                    .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
                    .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
 
-    print("Filling missing SSNs with DOB/name match")
+    info("Filling missing SSNs with DOB/name match")
     pii = pii.merge(dob_names,
                     on=["dob", "last_name", "first_sdx"],
                     how="left",
@@ -284,18 +284,18 @@ def SiradID():
     pii.loc[merged, "ssn_invalid"] = 0
     stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
-    print("Creating keys for valid SSNs")
+    info("Creating keys for valid SSNs")
     pii["key"] = np.nan
     valid_ssn = pii.ssn_invalid == 0
     pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
     stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 
-    print("Creating keys for valid DOB/names")
+    info("Creating keys for valid DOB/names")
     valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
     pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
     stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
 
-    print("Generating SIRAD_ID as randomized dense rank over keys")
+    info("Generating SIRAD_ID as randomized dense rank over keys")
     key = pii.key[pii.key.notnull()].unique()
     np.random.shuffle(key)
     sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
@@ -307,7 +307,6 @@ def SiradID():
 
     # Save SIRAD ID statistics to a file in the research output directory.
     stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
-    print(stats)
 
     return pii
 
