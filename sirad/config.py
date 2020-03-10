@@ -39,7 +39,7 @@ def get_path(name, subdir):
                         "{}.txt".format(name))
     d = os.path.dirname(path)
     if not os.path.exists(d):
-        print("Creating output directory:", d)
+        logging.info("Creating output directory: " + d)
         os.makedirs(d, exist_ok=True)
     return path
 
@@ -60,7 +60,7 @@ def load_process_log():
     else:
         d = os.path.dirname(_options["PROCESS_LOG"])
         if not os.path.exists(d):
-            print("Creating output directory:", d)
+            logging.info("Creating output directory: " + d)
             os.makedirs(d, exist_ok=True)
         with open(_options["PROCESS_LOG"], "w") as f:
             f.write("DATASET,NROWS,ELAPSED\n")
@@ -106,7 +106,7 @@ def set_options(options):
     _options.update(options)
 
 
-def parse_layouts(process_log=False):
+def parse_layouts(process_log=False, verbose=False):
     """
     Parse YAML layout files in LAYOUTS directory.
     """
@@ -119,6 +119,6 @@ def parse_layouts(process_log=False):
             else:
                 layout = yaml.safe_load(open(os.path.join(root, filename)))
                 DATASETS.append(Dataset(name, layout))
-                logging.info("Loaded config for {}".format(name))
+                if verbose: logging.info("Loaded config for {}".format(name))
     DATASETS = sorted(DATASETS, key=lambda x: x.name)
 
