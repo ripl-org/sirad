@@ -38,7 +38,7 @@ def Censuscode(dataset, prefix, addresses):
     Determine the census blockgroup for an address based on
     zip code, street name, and street number.
     """
-
+    info = Log(__name__, "Censuscoding", prefix, dataset.name).info
     filename = "{}.censuscode.{}.csv".format(config.get_path(dataset.name, "pii").rpartition(".")[0], prefix)
     logname = "{}.censuscode.{}.log".format(config.get_path(dataset.name, "research").rpartition(".")[0], prefix)
 
@@ -52,7 +52,7 @@ def Censuscode(dataset, prefix, addresses):
 
     with open(logname, "w") as log:
 
-        # Load the lookup files.
+        info("Loading lookup files")
         streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"), low_memory=False)\
                     .rename(columns={geo_level[0]: geo_level[1]})\
                     .drop_duplicates(["street", "zip"])
@@ -62,19 +62,19 @@ def Censuscode(dataset, prefix, addresses):
                  .drop_duplicates(["street_num", "street", "zip"])
         print(len(nums), "distinct street name/numbers", file=log)
 
-        # Build range look-up for street nums.
+        info("Building range look-up for street nums")
         num_lookup = {}
         for index, group in nums.groupby(["street", "zip"]):
             group = group.sort_values("street_num")
             num_lookup[index] = (group["street_num"].values, group[geo_level[1]].values)
         print(len(num_lookup), "look-ups for street number ranges", file=log)
 
-        # Keep records with non-missing zip codes.
+        info("Filtering records with non-missing zip codes")
         addresses = addresses[addresses[zip].notnull()]
         N.append(len(addresses))
         print(N[-1], "records with non-missing zip codes", file=log)
 
-        # Keep records with valid integer zip codes.
+        info("Filtering records with valid integer zip codes")
         if addresses[zip].dtype == "O":
             addresses[zip] = addresses[zip].str.extract("(\d+)", expand=False)
             addresses = addresses[addresses[zip].notnull()]
@@ -83,13 +83,13 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
 
-        # Only retain records with valid street names.
+        info("Filtering records with valid street names")
         addresses[street] = addresses[street].str.upper().str.extract("([0-9A-Z ]+)", expand=False)
         addresses = addresses[addresses[street].notnull()]
         N.append(len(addresses))
         print(N[-1], "records with valid street names", file=log)
 
-        # MERGE 1: distinct street name.
+        info("Merge 1 on distinct street name")
         addresses = addresses.merge(streets,
                                     how="left",
                                     left_on=[street, zip],
@@ -114,7 +114,7 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records with valid integer street nums", file=log)
 
-        # MERGE 2: distinct street name/num.
+        info("Merge 2 on distinct street name/num")
         addresses = addresses.merge(nums,
                                     how="left",
                                     left_on=[street_num, street, zip],
@@ -131,7 +131,7 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records remaining", file=log)
 
-        # MERGE 3: street with street number range search.
+        info("Merge 3 on street with street number range search")
         merged = []
         for _, row in addresses.iterrows():
             l = num_lookup.get((row[street], row[zip]))
@@ -146,7 +146,7 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records remain unmerged", file=log)
         print("overall match rate: {:.1f}%".format(100.0 * (N[0] - (N[0] - N[2]) - N[-1]) / N[0]), file=log)
 
-    return filename
+    info("Done")
 
 
 def Addresses(dataset):
@@ -200,11 +200,10 @@ def Addresses(dataset):
                 if zip in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
                         df[city] = ""
-                    info("Running censuscoding")
                     Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
 
                 else:
-                    info("Cannot run censuscoding (zip: {}, street: {}, street_num: {})".format(
+                    info("Unable to restructure address PII columns (zip: {}, street: {}, street_num: {})".format(
                         zip in df.columns,
                         street in df.columns,
                         street_num in df.columns))
@@ -308,6 +307,7 @@ def SiradID():
     # Save SIRAD ID statistics to a file in the research output directory.
     stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
 
+    info("Done")
     return pii
 
 
