@@ -5,6 +5,7 @@ Code borrowed/inspired from: https://github.com/wireservice/agate
 """
 import csv
 from collections import namedtuple
+from datetime import datetime
 from openpyxl import load_workbook
 
 # Character mapping to remove control and protected characters (newlines and |)
@@ -220,12 +221,22 @@ def fixed_reader(*args, **kwargs):
 
 ### Excel ###
 
+def xlsx_extract(cell):
+    """
+    Extract a value from an Excel cell, preserving date types.
+    """
+    if isinstance(cell.value, datetime):
+        return cell.value
+    elif cell.value is None:
+        return ""
+    else:
+        return str(cell.value).translate(char_mapping)
+
 def xlsx_reader(filename, header, **kwargs):
     wb = load_workbook(filename=filename, read_only=True, keep_links=False)
-    newlines = str.maketrans("\r\n", "  ")
     if header:
         mapping = dict((c.value.strip().upper(), i) for i, c in enumerate(next(wb.active.rows)))
         columns = [mapping[c.upper()] for c in header]
-        return iter([["" if r[i].value is None else r[i].value.translate(newlines) for i in columns] for r in wb.active.rows][1:])
+        return iter([[xlsx_extract(r[i]) for i in columns] for r in wb.active.rows][1:])
     else:
-        return iter([["" if c.value is None else c.value.translate(newlines) for c in r] for r in wb.active.rows])
+        return iter([[xlsx_extract(c) for c in r] for r in wb.active.rows])
