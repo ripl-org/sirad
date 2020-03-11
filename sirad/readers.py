@@ -222,9 +222,10 @@ def fixed_reader(*args, **kwargs):
 
 def xlsx_reader(filename, header, **kwargs):
     wb = load_workbook(filename=filename, read_only=True, keep_links=False)
+    newlines = str.maketrans("\r\n", "  ")
     if header:
         mapping = dict((c.value.strip().upper(), i) for i, c in enumerate(next(wb.active.rows)))
         columns = [mapping[c.upper()] for c in header]
-        return iter([["" if r[i].value is None else r[i].value for i in columns] for r in wb.active.rows][1:])
+        return iter([["" if r[i].value is None else r[i].value.translate(newlines) for i in columns] for r in wb.active.rows][1:])
     else:
-        return iter([["" if c.value is None else c.value for c in r] for r in wb.active.rows])
+        return iter([["" if c.value is None else c.value.translate(newlines) for c in r] for r in wb.active.rows])
