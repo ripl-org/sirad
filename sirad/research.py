@@ -47,6 +47,9 @@ def Censuscode(dataset, prefix, addresses):
     street = "{}_street".format(prefix)
     street_num = "{}_street_num".format(prefix)
 
+    # Clean city
+    addresses[city] = addresses[city].str.upper().str.extract("([A-Z ]+)", expand=False)
+
     N = [len(addresses)]
     geo_level = ("blkgrp", "{}_blkgrp".format(prefix))
 
