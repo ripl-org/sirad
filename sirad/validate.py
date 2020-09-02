@@ -17,7 +17,7 @@ def Validate(dataset):
     # Read first line of input file
     if dataset.type == "csv":
         with open(dataset.source, "r", encoding=dataset.encoding, newline="") as f:
-            firstline = [c.strip().upper() for c in next(f).split(dataset.delimiter)]
+            firstline = [c.strip().strip('"').upper() for c in next(f).split(dataset.delimiter)]
     elif dataset.type == "xlsx":
         wb = load_workbook(filename=dataset.source, read_only=True, keep_links=False)
         firstline = [c.value.strip().upper() for c in next(wb.active.rows)]

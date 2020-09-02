@@ -11,7 +11,7 @@ from sirad import config, Log
 from sirad.soundex import soundex
 from multiprocessing import Process, Queue
 
-_address_prefixes = ("home", "employer")
+_address_prefixes = ("home", "employer", "mailing", "employer1", "employer2", "employer3")
 
 
 def _split_address(x):
