@@ -14,6 +14,7 @@ parser.add_argument("-v", "--version",
                     action="version",
                     version="SIRAD {}".format(sirad.__version__))
 parser.add_argument("-n", type=int, default=1, help="number of threads to use in parallel")
+parser.add_argument("--verbose", action="store_true")
 
 subparsers = parser.add_subparsers()
 
@@ -40,12 +41,12 @@ if "cmd" in args:
     from sirad import config
 
     if args.cmd == "sources":
-        config.parse_layouts()
+        config.parse_layouts(verbose=args.verbose)
         for dataset in config.DATASETS:
             print(dataset.source)
 
     elif args.cmd == "validate":
-        config.parse_layouts()
+        config.parse_layouts(verbose=args.verbose)
         from sirad.validate import Validate
         if args.n > 1:
             pool = multiprocessing.Pool(processes=args.n)
@@ -56,7 +57,7 @@ if "cmd" in args:
             sys.exit(1)
 
     elif args.cmd == "process":
-        config.parse_layouts(process_log=True)
+        config.parse_layouts(process_log=True, verbose=args.verbose)
         from sirad.process import Process
         if args.n > 1:
             pool = multiprocessing.Pool(processes=args.n)
@@ -66,7 +67,7 @@ if "cmd" in args:
                 Process(dataset)
 
     elif args.cmd == "research":
-        config.parse_layouts()
+        config.parse_layouts(verbose=args.verbose)
         from sirad.research import Research
         Research(args.n, args.seed)
 
