@@ -106,7 +106,7 @@ def set_options(options):
     _options.update(options)
 
 
-def parse_layouts(process_log=False, verbose=False):
+def parse_layouts(process_log=False):
     """
     Parse YAML layout files in LAYOUTS directory.
     """
@@ -117,7 +117,7 @@ def parse_layouts(process_log=False, verbose=False):
             if process_log and name in FINISHED:
                 logging.info("Found process log for {}".format(name))
             else:
-                if verbose: logging.info("Loading config for {}".format(name))
+                logging.debug("Loading config for {}".format(name))
                 layout = yaml.safe_load(open(os.path.join(root, filename)))
                 DATASETS.append(Dataset(name, layout))
     DATASETS = sorted(DATASETS, key=lambda x: x.name)

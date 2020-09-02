@@ -3,12 +3,10 @@ Helper functions for extracting values from fields.
 """
 
 import hashlib
-import logging
-
-from sirad import config
+from sirad import config, Log
 from datetime import datetime
 
-log = logging.getLogger(__name__)
+debug = Log(__name__, "date").debug
 
 def salted_hash(value, salt):
     if salt is None:
@@ -31,7 +29,7 @@ def date(raw, date_format):
             dobj = datetime.strptime(raw, fmt)
             break
         except ValueError:
-            log.debug("Unable to process {} as date with format {}.".format(raw, fmt))
+            debug("Unable to process", raw, "as date with format", fmt)
             pass
     if dobj is None:
         return ""
