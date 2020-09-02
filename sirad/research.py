@@ -13,7 +13,7 @@ from sirad import config
 from sirad.soundex import soundex
 
 
-_address_prefixes = ("home", "employer")
+_address_prefixes = ("home", "employer", "mailing", "employer1", "employer2", "employer3")
 
 
 def _split_address(x):
