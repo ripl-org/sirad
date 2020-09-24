@@ -2,17 +2,16 @@
 Create a research release.
 """
 
-import multiprocessing
 import numpy as np
 import os
 import pandas as pd
 import usaddress
 
-from sirad import config
+from sirad import config, Log
 from sirad.soundex import soundex
+from multiprocessing import Process, Queue
 
-
-_address_prefixes = ("home", "employer")
+_address_prefixes = ("home", "employer", "mailing", "employer1", "employer2", "employer3")
 
 
 def _split_address(x):
@@ -39,7 +38,7 @@ def Censuscode(dataset, prefix, addresses):
     Determine the census blockgroup for an address based on
     zip code, street name, and street number.
     """
-
+    info = Log(__name__, "Censuscoding", prefix, dataset.name).info
     filename = "{}.censuscode.{}.csv".format(config.get_path(dataset.name, "pii").rpartition(".")[0], prefix)
     logname = "{}.censuscode.{}.log".format(config.get_path(dataset.name, "research").rpartition(".")[0], prefix)
 
@@ -48,34 +47,37 @@ def Censuscode(dataset, prefix, addresses):
     street = "{}_street".format(prefix)
     street_num = "{}_street_num".format(prefix)
 
+    # Clean city
+    addresses[city] = addresses[city].str.upper().str.extract("([A-Z ]+)", expand=False)
+
     N = [len(addresses)]
     geo_level = ("blkgrp", "{}_blkgrp".format(prefix))
 
     with open(logname, "w") as log:
 
-        # Load the lookup files.
-        streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"))\
+        info("Loading lookup files")
+        streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"), low_memory=False)\
                     .rename(columns={geo_level[0]: geo_level[1]})\
                     .drop_duplicates(["street", "zip"])
         print(len(streets), "distinct street names", file=log)
-        nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"))\
+        nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"), low_memory=False)\
                  .rename(columns={geo_level[0]: geo_level[1]})\
                  .drop_duplicates(["street_num", "street", "zip"])
         print(len(nums), "distinct street name/numbers", file=log)
 
-        # Build range look-up for street nums.
+        info("Building range look-up for street nums")
         num_lookup = {}
         for index, group in nums.groupby(["street", "zip"]):
             group = group.sort_values("street_num")
             num_lookup[index] = (group["street_num"].values, group[geo_level[1]].values)
         print(len(num_lookup), "look-ups for street number ranges", file=log)
 
-        # Keep records with non-missing zip codes.
+        info("Filtering records with non-missing zip codes")
         addresses = addresses[addresses[zip].notnull()]
         N.append(len(addresses))
         print(N[-1], "records with non-missing zip codes", file=log)
 
-        # Keep records with valid integer zip codes.
+        info("Filtering records with valid integer zip codes")
         if addresses[zip].dtype == "O":
             addresses[zip] = addresses[zip].str.extract("(\d+)", expand=False)
             addresses = addresses[addresses[zip].notnull()]
@@ -84,13 +86,13 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
 
-        # Only retain records with valid street names.
+        info("Filtering records with valid street names")
         addresses[street] = addresses[street].str.upper().str.extract("([0-9A-Z ]+)", expand=False)
         addresses = addresses[addresses[street].notnull()]
         N.append(len(addresses))
         print(N[-1], "records with valid street names", file=log)
 
-        # MERGE 1: distinct street name.
+        info("Merge 1 on distinct street name")
         addresses = addresses.merge(streets,
                                     how="left",
                                     left_on=[street, zip],
@@ -115,7 +117,7 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records with valid integer street nums", file=log)
 
-        # MERGE 2: distinct street name/num.
+        info("Merge 2 on distinct street name/num")
         addresses = addresses.merge(nums,
                                     how="left",
                                     left_on=[street_num, street, zip],
@@ -132,7 +134,7 @@ def Censuscode(dataset, prefix, addresses):
         N.append(len(addresses))
         print(N[-1], "records remaining", file=log)
 
-        # MERGE 3: street with street number range search.
+        info("Merge 3 with street number range search")
         merged = []
         for _, row in addresses.iterrows():
             l = num_lookup.get((row[street], row[zip]))
@@ -147,22 +149,22 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records remain unmerged", file=log)
         print("overall match rate: {:.1f}%".format(100.0 * (N[0] - (N[0] - N[2]) - N[-1]) / N[0]), file=log)
 
-    return filename
+    info("Done")
 
 
 def Addresses(dataset):
     """
-    Identify and clean address PII fields, perform censuscoding,
-    and return the paths to censuscoded output in the PII directory.
+    Identify and clean address PII fields and perform censuscoding
+    if sufficient address components are available.
     """
-
-    print("Loading address PII from", dataset.name)
     columns = frozenset(dataset.pii_header)
     assert "pii_id" in columns
     output = []
 
     # Loop over address type.
     for prefix in _address_prefixes:
+
+        info = Log(__name__, "Addresses", prefix, dataset.name).info
 
         address_fields = ["pii_id"]
 
@@ -178,25 +180,43 @@ def Addresses(dataset):
         if len(address_fields) > 1:
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
-                             usecols=address_fields)
-        if len(df) > 0:
-            zip = "{}_zip5".format(prefix)
-            city = "{}_city".format(prefix)
-            street = "{}_street".format(prefix)
-            street_num = "{}_street_num".format(prefix)
-            if contains["zip9"] and not contains["zip5"]:
-                df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5).astype(int)
-            if contains["address"]:
-                address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).apply(_split_address).tolist())
-                if "StreetNamePreDirectional" in address.columns:
-                    df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
+                             usecols=address_fields,
+                             low_memory=False)
+
+            if len(df) > 0:
+                zip = "{}_zip5".format(prefix)
+                city = "{}_city".format(prefix)
+                street = "{}_street".format(prefix)
+                street_num = "{}_street_num".format(prefix)
+
+                if contains["zip9"] and not contains["zip5"]:
+                    df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5)
+
+                if contains["address"]:
+                    address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).fillna("").apply(_split_address).tolist())
+                    if "StreetNamePreDirectional" in address.columns:
+                        df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
+                    else:
+                        df[street] = address.StreetName
+                    df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
+
+                if zip in df.columns and street in df.columns and street_num in df.columns:
+                    if not contains["city"]:
+                        df[city] = ""
+                    Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
+
                 else:
-                    df[street] = address.StreetName
-                df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
-            if zip in df.columns and street in df.columns and street_num in df.columns:
-                if not contains["city"]:
-                    df[city] = ""
-                Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
+                    info("Unable to restructure address PII columns (zip: {}, street: {}, street_num: {})".format(
+                        zip in df.columns,
+                        street in df.columns,
+                        street_num in df.columns))
+            else:
+                info("No PII records")
+        else:
+            if sum(contains.values()) == 0:
+                info("No address PII columns")
+            else:
+                info("Not enough address PII columns ({})".format(str(contains)))
 
 
 def SiradID():
@@ -204,13 +224,14 @@ def SiradID():
     Stack PII from all data sets to construct a global anonymous ID
     called the SIRAD ID.
     """
-
+    info = Log(__name__, "SiradID").info
     datasets = set()
     pii = []
 
     for dataset in [d for d in config.DATASETS if d.has_pii]:
 
-        print("Loading PII from", dataset.name)
+
+        info("Loading PII for", dataset.name)
         columns = frozenset(dataset.pii_header)
         id_fields = ["pii_id"]
         assert "pii_id" in columns
@@ -227,7 +248,8 @@ def SiradID():
         if len(id_fields) > 1:
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
-                             usecols=id_fields)
+                             usecols=id_fields,
+                             low_memory=False)
             if len(df) > 0:
                 if "first_name" in id_fields:
                     # Convert first name to Soundex value.
@@ -241,11 +263,11 @@ def SiradID():
     # Keep track of statistics while constructing the SIRAD ID.
     stats = pd.DataFrame(index=datasets)
 
-    print("Concatenating PII")
+    info("Concatenating PII")
     pii = pd.concat(pii, ignore_index=True, sort=False)
     stats["n_all_pii"] = pii["dsn"].value_counts()
 
-    print("Matching DOB/names to distinct valid SSN")
+    info("Matching DOB/names to distinct valid SSN")
     valid = ((pii.ssn_invalid == 0) &
              (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
     # Keep first record for distinct name/DOB/SSN,
@@ -254,7 +276,7 @@ def SiradID():
                    .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
                    .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
 
-    print("Filling missing SSNs with DOB/name match")
+    info("Filling missing SSNs with DOB/name match")
     pii = pii.merge(dob_names,
                     on=["dob", "last_name", "first_sdx"],
                     how="left",
@@ -264,18 +286,18 @@ def SiradID():
     pii.loc[merged, "ssn_invalid"] = 0
     stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
-    print("Creating keys for valid SSNs")
+    info("Creating keys for valid SSNs")
     pii["key"] = np.nan
     valid_ssn = pii.ssn_invalid == 0
     pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
     stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 
-    print("Creating keys for valid DOB/names")
+    info("Creating keys for valid DOB/names")
     valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
     pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
     stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
 
-    print("Generating SIRAD_ID as randomized dense rank over keys")
+    info("Generating SIRAD_ID as randomized dense rank over keys")
     key = pii.key[pii.key.notnull()].unique()
     np.random.shuffle(key)
     sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
@@ -287,9 +309,22 @@ def SiradID():
 
     # Save SIRAD ID statistics to a file in the research output directory.
     stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
-    print(stats)
 
+    info("Done")
     return pii
+
+
+def ResearchWorker(tasks, results):
+    """
+    Helper function for concurrently running Addresses and SiradID.
+    """
+    while not tasks.empty():
+        task = tasks.get()
+        if task[0] == "SiradID":
+            ids = SiradID()
+            results.put(ids)
+        elif task[0] == "Addresses":
+            Addresses(task[1])
 
 
 def Research(nthreads=1, seed=0):
@@ -298,29 +333,40 @@ def Research(nthreads=1, seed=0):
     then attach the results to the deidentified data files to generate the
     final anonymoized research release.
     """
+    info = Log(__name__, "Research").info
 
     if seed:
         np.random.seed(seed)
 
-    # Concurrently run geocoder if multiple threads are available.
+    # Concurrently run Addresses and SiradID if multiple threads are available.
     if nthreads > 1:
-        pool = multiprocessing.Pool(nthreads-1)
-        pool.map_async(Addresses, [d for d in config.DATASETS if d.has_pii])
-        pool.close()
+        # Define tasks
+        tasks = Queue()
+        for dataset in config.DATASETS:
+           if dataset.has_pii:
+               tasks.put(("Addresses", dataset))
+        tasks.put(("SiradID",))
+        # Run tasks
+        results = Queue()
+        pool = []
+        for n in range(nthreads):
+            p = Process(target=ResearchWorker, args=(tasks, results))
+            pool.append(p)
+            p.start()
+        for p in pool:
+            p.join()
+        ids = results.get() # Only the SiradID process returns a result
     else:
         for dataset in config.DATASETS:
            if dataset.has_pii:
                Addresses(dataset)
-
-    # Start SIRAD ID in main thread.
-    ids = SiradID()
-    id_dsns = frozenset(ids.index)
-
-    if nthreads > 1:
-        pool.join()
+        ids = SiradID()
 
     # Attach SIRAD ID and/or addresses to each data set to produce the
     # final set of research files.
+
+    id_dsns = frozenset(ids.index)
+
     for dataset in config.DATASETS:
 
         # Setup paths
@@ -330,19 +376,19 @@ def Research(nthreads=1, seed=0):
         # Identify SIRAD ID and/or address links.
         link = None
         if dataset.name in id_dsns:
-            print("Attaching SIRAD_ID to", dataset.name)
-            link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
+            info("Attaching SIRAD_ID to", dataset.name)
+            link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|", low_memory=False)\
                      .sort_values("record_id")\
                      .merge(ids.loc[[dataset.name]], on="pii_id", how="left")
             assert link.sirad_id.notnull().all()
         for prefix in _address_prefixes:
             filename = "{}.censuscode.{}.csv".format(config.get_path(dataset.name, "pii").rpartition(".")[0], prefix)
             if os.path.exists(filename):
-                print("Attaching censuscoded", prefix, "addresses to", dataset.name)
+                info("Attaching censuscoded", prefix, "addresses to", dataset.name)
                 if link is None:
-                    link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|")\
+                    link = pd.read_csv(config.get_path(dataset.name, "link"), sep="|", low_memory=False)\
                              .sort_values("record_id")
-                link = link.merge(pd.read_csv(filename), on="pii_id", how="left")
+                link = link.merge(pd.read_csv(filename, low_memory=False), on="pii_id", how="left")
 
         # Write out a new research file with attached data if available,
         # otherwise use the data file as-is via a hard link.
@@ -358,9 +404,10 @@ def Research(nthreads=1, seed=0):
                     f2.write("|")
                     f2.write(data_row)
         else:
-            print("Hard-linking", dataset.name)
+            info("Hard-linking", dataset.name)
             if os.path.exists(res_path):
                 os.unlink(res_path)
             os.link(data_path, res_path)
 
+    info("Done")
 

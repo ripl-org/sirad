@@ -5,6 +5,7 @@ Code borrowed/inspired from: https://github.com/wireservice/agate
 """
 import csv
 from collections import namedtuple
+from datetime import datetime
 from openpyxl import load_workbook
 
 # Character mapping to remove control and protected characters (newlines and |)
@@ -46,40 +47,61 @@ char_mapping[u"\x9e"] = None # Remove control character
 char_mapping[u"\x9f"] = None # Remove control character
 char_mapping[u"\xa0"] = " " # Replace non-breaking space
 char_mapping[u"\xa1"] = "!" # Invert explanation mark 
-char_mapping[u"\xa2"] = " cents" # Replace cents sign with cents 
-char_mapping[u"\xa5"] = " Yen" # Remove control character
+char_mapping[u"\xa2"] = " cents" # Replace cents sign
+char_mapping[u"\xa3"] = " pounds" # Replace lb sign
+char_mapping[u"\xa4"] = None # Remove currency sign
+char_mapping[u"\xa5"] = " Yen" # Replace yen sign
 char_mapping[u"\xa6"] = None # Remove broken bar
 char_mapping[u"\xa7"] = "Sec. " # Remove section char
 char_mapping[u"\xa8"] = None # Remove diaeresis
 char_mapping[u"\xa9"] = " Copyright" # Remove control character
+char_mapping[u"\xaa"] = None # Remove ordinal indicator
 char_mapping[u"\xab"] = "<<" # Replace left pointing double angle quotation mark with <<
+char_mapping[u"\xac"] = None # Remove not sign
 char_mapping[u"\xad"] = "-" # Replace soft hyphen with hyphen
 char_mapping[u"\xae"] = " Registered" # Replace registered symbol
 char_mapping[u"\xaf"] = None # Remove macron
 char_mapping[u"\xb0"] = " degrees" # Replace degree symbol
 char_mapping[u"\xb1"] = "+/-" # Replace +/- sign
+char_mapping[u"\xb2"] = None
+char_mapping[u"\xb3"] = None
 char_mapping[u"\xb4"] = None # Remove accent
 char_mapping[u"\xb5"] = " micro" # Replace micro sign
 char_mapping[u"\xb6"] = None # Remove pilcrow sign
 char_mapping[u"\xb7"] = "." # Replace middle dot with period
 char_mapping[u"\xb8"] = None # Remove cedilla
+char_mapping[u"\xb9"] = None
+char_mapping[u"\xba"] = None
 char_mapping[u"\xbb"] = ">>" # Replace right pointing double angle quotation mark with >>
 char_mapping[u"\xbc"] = " 1/4 " # Replace 1/4 sign
 char_mapping[u"\xbd"] = " 1/2 " # Replace 1/2 sign
 char_mapping[u"\xbe"] = " 3/4 " # Replace 3/4 sign
 char_mapping[u"\xbf"] = "?" # Invert question mark
+char_mapping[u"\xc0"] = None
 char_mapping[u"\xc1"] = "A" # Remove accent mark over A
 char_mapping[u"\xc2"] = "A" # Remove hat mark over A
 char_mapping[u"\xc3"] = "A" # Remove ~ over A
+char_mapping[u"\xc4"] = None
 char_mapping[u"\xc5"] = "A" # Remove ring over A
+char_mapping[u"\xc6"] = None
+char_mapping[u"\xc7"] = None
+char_mapping[u"\xc8"] = None
 char_mapping[u"\xc9"] = "E" # Remove acute over E
+char_mapping[u"\xca"] = None
+char_mapping[u"\xcb"] = None
+char_mapping[u"\xcc"] = None
+char_mapping[u"\xcd"] = None
+char_mapping[u"\xce"] = None
 char_mapping[u"\xcf"] = "I" # Remove diaeresis over I
+char_mapping[u"\xd0"] = None
 char_mapping[u"\xd1"] = "N" # Remove ~ on top of N
 char_mapping[u"\xd2"] = "O" # Remove grave over O
+char_mapping[u"\xd3"] = None
 char_mapping[u"\xd4"] = "O" # Remove hat over O
 char_mapping[u"\xd5"] = "O" # Remove ~ over O
 char_mapping[u"\xd6"] = "O" # Remove diaeresis over O
 char_mapping[u"\xd7"] = "x" # Replace multiplication sign
+char_mapping[u"\xd8"] = None
 char_mapping[u"\xd9"] = "U" # Remove grave over U
 char_mapping[u"\xda"] = "U" # Remove acute over U
 char_mapping[u"\xdb"] = "U" # Remove hat over U
@@ -97,11 +119,21 @@ char_mapping[u"\xe6"] = "ae" # Replace ae single letter with ae
 char_mapping[u"\xe7"] = "c" # Remove tail on c
 char_mapping[u"\xe8"] = "e" # Remove grave on e
 char_mapping[u"\xe9"] = "e" # Remove acute on e
+char_mapping[u"\xea"] = None
+char_mapping[u"\xeb"] = None
+char_mapping[u"\xec"] = None
+char_mapping[u"\xed"] = None
+char_mapping[u"\xee"] = None
 char_mapping[u"\xef"] = "i" # Remove diaeresis on i
+char_mapping[u"\xf0"] = None
 char_mapping[u"\xf1"] = "n" # Remove ~ on top of n
+char_mapping[u"\xf2"] = None
+char_mapping[u"\xf3"] = None
 char_mapping[u"\xf4"] = "o" # Remove hat over o
+char_mapping[u"\xf5"] = None
 char_mapping[u"\xf6"] = "o" # Remove diaeresis over o 
 char_mapping[u"\xf7"] = "/" # Replace division symbol
+char_mapping[u"\xf8"] = None
 char_mapping[u"\xf9"] = "u" # Remove grave over u 
 char_mapping[u"\xfa"] = "u" # Remove acute over u 
 char_mapping[u"\xfb"] = "u" # Remove hat over u
@@ -133,10 +165,10 @@ class CsvReader(object):
         row = next(self.reader)
         if self.header:
             row = [row[x].translate(char_mapping).strip() for x in self.header if row[x] is not None]
+            if len(row) != len(self.header):
+                return self.__next__()
         else:
             row = [x.translate(char_mapping).strip() for x in row]
-        if len(row) != len(self.header):
-            return self.__next__()
         return row
 
     @property
@@ -189,11 +221,22 @@ def fixed_reader(*args, **kwargs):
 
 ### Excel ###
 
+def xlsx_extract(cell):
+    """
+    Extract a value from an Excel cell, preserving date types.
+    """
+    if isinstance(cell.value, datetime):
+        return cell.value
+    elif cell.value is None:
+        return ""
+    else:
+        return str(cell.value).translate(char_mapping)
+
 def xlsx_reader(filename, header, **kwargs):
     wb = load_workbook(filename=filename, read_only=True, keep_links=False)
     if header:
         mapping = dict((c.value.strip().upper(), i) for i, c in enumerate(next(wb.active.rows)))
         columns = [mapping[c.upper()] for c in header]
-        return iter([["" if r[i].value is None else r[i].value for i in columns] for r in wb.active.rows][1:])
+        return iter([[xlsx_extract(r[i]) for i in columns] for r in wb.active.rows][1:])
     else:
-        return iter([["" if c.value is None else c.value for c in r] for r in wb.active.rows])
+        return iter([[xlsx_extract(c) for c in r] for r in wb.active.rows])

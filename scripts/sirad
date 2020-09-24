@@ -4,6 +4,7 @@ SIRAD - Secure Infrastructure for Research with Administrative Data
 """
 
 import argparse
+import logging
 import multiprocessing
 import sirad
 import sys
@@ -14,8 +15,20 @@ parser.add_argument("-v", "--version",
                     action="version",
                     version="SIRAD {}".format(sirad.__version__))
 parser.add_argument("-n", type=int, default=1, help="number of threads to use in parallel")
+parser.add_argument("-q", "--quiet",
+                    action="store_true",
+                    help="suppress all logging messages except for errors")
+parser.add_argument("-d", "--debug",
+                    action="store_true",
+                    help="show all logging messages, including debugging output")
 
 subparsers = parser.add_subparsers()
+
+process = subparsers.add_parser("sources")
+process.set_defaults(cmd="sources")
+
+process = subparsers.add_parser("validate")
+process.set_defaults(cmd="validate")
 
 process = subparsers.add_parser("process")
 process.set_defaults(cmd="process")
@@ -29,11 +42,32 @@ args = parser.parse_args()
 if "cmd" in args:
 
     import logging
-    logging.basicConfig(level=logging.INFO)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    elif args.quiet:
+        logging.basicConfig(level=logging.ERROR)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     from sirad import config
 
-    if args.cmd == "process":
+    if args.cmd == "sources":
+        config.parse_layouts()
+        for dataset in config.DATASETS:
+            print(dataset.source)
+
+    elif args.cmd == "validate":
+        config.parse_layouts()
+        from sirad.validate import Validate
+        if args.n > 1:
+            pool = multiprocessing.Pool(processes=args.n)
+            nwarnings = sum(pool.map(Validate, config.DATASETS, chunksize=1))
+        else:
+            nwarnings = sum(map(Validate, config.DATASETS))
+        if nwarnings > 0:
+            sys.exit(1)
+
+    elif args.cmd == "process":
         config.parse_layouts(process_log=True)
         from sirad.process import Process
         if args.n > 1:
