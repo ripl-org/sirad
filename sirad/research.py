@@ -230,7 +230,6 @@ def SiradID():
 
     for dataset in [d for d in config.DATASETS if d.has_pii]:
 
-
         info("Loading PII for", dataset.name)
         columns = frozenset(dataset.pii_header)
         id_fields = ["pii_id"]
@@ -361,6 +360,9 @@ def Research(nthreads=1, seed=0):
            if dataset.has_pii:
                Addresses(dataset)
         ids = SiradID()
+
+    info("Writing SIRAD_ID table")
+    ids.to_csv(config.get_path("sirad_id", "pii"), float_format="%g")
 
     # Attach SIRAD ID and/or addresses to each data set to produce the
     # final set of research files.
