@@ -31,5 +31,9 @@ setup(
         "usaddress"],
     packages=find_packages(),
     package_data={"sirad": ["VERSION"]},
-    scripts=["scripts/sirad"]
+    entry_points={
+        "console_scripts": [
+            "sirad = sirad.__main__:main"
+        ]
+    }
 )
