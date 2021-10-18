@@ -227,6 +227,7 @@ def SiradID():
     info = Log(__name__, "SiradID").info
     datasets = set()
     pii = []
+    have_name_dob = False
 
     for dataset in [d for d in config.DATASETS if d.has_pii]:
 
@@ -241,6 +242,7 @@ def SiradID():
             id_fields += ["ssn", "ssn_invalid"]
         if "first_name" in columns and "last_name" in columns and "dob" in columns:
             id_fields += ["first_name", "last_name", "dob"]
+            have_name_dob = True
 
         # Either the SSN or name/DOB fields must be available to construct
         # a SIRAD ID for the dataset.
@@ -266,24 +268,26 @@ def SiradID():
     pii = pd.concat(pii, ignore_index=True, sort=False)
     stats["n_all_pii"] = pii["dsn"].value_counts()
 
-    info("Matching DOB/names to distinct valid SSN")
-    valid = ((pii.ssn_invalid == 0) &
-             (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
-    # Keep first record for distinct name/DOB/SSN,
-    # then drop records that have more than one SSN per name/DOB
-    dob_names = pii.loc[valid]\
-                   .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
-                   .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
+    if have_name_dob:
 
-    info("Filling missing SSNs with DOB/name match")
-    pii = pii.merge(dob_names,
-                    on=["dob", "last_name", "first_sdx"],
-                    how="left",
-                    suffixes=("", "_dob_names"))
-    merged = pii.ssn_dob_names.notnull()
-    pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
-    pii.loc[merged, "ssn_invalid"] = 0
-    stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
+        info("Matching DOB/names to distinct valid SSN")
+        valid = ((pii.ssn_invalid == 0) &
+                 (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
+        # Keep first record for distinct name/DOB/SSN,
+        # then drop records that have more than one SSN per name/DOB
+        dob_names = pii.loc[valid]\
+                       .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
+                       .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
+
+        info("Filling missing SSNs with DOB/name match")
+        pii = pii.merge(dob_names,
+                        on=["dob", "last_name", "first_sdx"],
+                        how="left",
+                        suffixes=("", "_dob_names"))
+        merged = pii.ssn_dob_names.notnull()
+        pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
+        pii.loc[merged, "ssn_invalid"] = 0
+        stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
     info("Creating keys for valid SSNs")
     pii["key"] = np.nan
@@ -291,10 +295,12 @@ def SiradID():
     pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
     stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 
-    info("Creating keys for valid DOB/names")
-    valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
-    pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
-    stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
+    if have_name_dob:
+
+        info("Creating keys for valid DOB/names")
+        valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
+        pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
+        stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
 
     info("Generating SIRAD_ID as randomized dense rank over keys")
     key = pii.key[pii.key.notnull()].unique()
