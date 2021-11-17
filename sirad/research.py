@@ -263,61 +263,65 @@ def SiradID():
                 datasets.add(dataset.name)
                 pii.append(df)
 
-    # Keep track of statistics while constructing the SIRAD ID.
-    stats = pd.DataFrame(index=datasets)
+    if len(pii) == 0:
+        info("Not enough PII records to construct SIRAD ID")
 
-    info("Concatenating PII")
-    pii = pd.concat(pii, ignore_index=True, sort=False)
-    stats["n_all_pii"] = pii["dsn"].value_counts()
+    else:
+        # Keep track of statistics while constructing the SIRAD ID.
+        stats = pd.DataFrame(index=datasets)
 
-    if have_name_dob:
+        info("Concatenating PII")
+        pii = pd.concat(pii, ignore_index=True, sort=False)
+        stats["n_all_pii"] = pii["dsn"].value_counts()
 
-        info("Matching DOB/names to distinct valid SSN")
-        valid = ((pii.ssn_invalid == 0) &
-                 (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
-        # Keep first record for distinct name/DOB/SSN,
-        # then drop records that have more than one SSN per name/DOB
-        dob_names = pii.loc[valid]\
-                       .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
-                       .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
+        if have_name_dob:
 
-        info("Filling missing SSNs with DOB/name match")
-        pii = pii.merge(dob_names,
-                        on=["dob", "last_name", "first_sdx"],
-                        how="left",
-                        suffixes=("", "_dob_names"))
-        merged = pii.ssn_dob_names.notnull()
-        pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
-        pii.loc[merged, "ssn_invalid"] = 0
-        stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
+            info("Matching DOB/names to distinct valid SSN")
+            valid = ((pii.ssn_invalid == 0) &
+                     (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
+            # Keep first record for distinct name/DOB/SSN,
+            # then drop records that have more than one SSN per name/DOB
+            dob_names = pii.loc[valid]\
+                           .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
+                           .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
 
-    info("Creating keys for valid SSNs")
-    pii["key"] = np.nan
-    valid_ssn = pii.ssn_invalid == 0
-    pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
-    stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
+            info("Filling missing SSNs with DOB/name match")
+            pii = pii.merge(dob_names,
+                            on=["dob", "last_name", "first_sdx"],
+                            how="left",
+                            suffixes=("", "_dob_names"))
+            merged = pii.ssn_dob_names.notnull()
+            pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
+            pii.loc[merged, "ssn_invalid"] = 0
+            stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
-    if have_name_dob:
+        info("Creating keys for valid SSNs")
+        pii["key"] = np.nan
+        valid_ssn = pii.ssn_invalid == 0
+        pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
+        stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 
-        info("Creating keys for valid DOB/names")
-        valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
-        pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
-        stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
+        if have_name_dob:
 
-    info("Generating SIRAD_ID as randomized dense rank over keys")
-    key = pii.key[pii.key.notnull()].unique()
-    np.random.shuffle(key)
-    sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
-    pii = pii.merge(sirad_id, on="key", how="left")
-    stats["n_ids"] = pii.loc[pii.sirad_id.notnull(), "dsn"].value_counts()
+            info("Creating keys for valid DOB/names")
+            valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
+            pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
+            stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
 
-    pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
-    pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
+        info("Generating SIRAD_ID as randomized dense rank over keys")
+        key = pii.key[pii.key.notnull()].unique()
+        np.random.shuffle(key)
+        sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
+        pii = pii.merge(sirad_id, on="key", how="left")
+        stats["n_ids"] = pii.loc[pii.sirad_id.notnull(), "dsn"].value_counts()
 
-    # Save SIRAD ID statistics to a file in the research output directory.
-    stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
+        pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
+        pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
 
-    info("Done")
+        # Save SIRAD ID statistics to a file in the research output directory.
+        stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
+        info("Done")
+
     return pii
 
 
@@ -369,13 +373,15 @@ def Research(nthreads=1, seed=0):
                Addresses(dataset)
         ids = SiradID()
 
-    info("Writing SIRAD_ID table")
-    ids.to_csv(config.get_path("sirad_id", "pii"), float_format="%g")
+    if len(ids) > 0:
+        info("Writing SIRAD_ID table")
+        ids.to_csv(config.get_path("sirad_id", "pii"), float_format="%g")
+        id_dsns = frozenset(ids.index)
+    else:
+        id_dsns = []
 
     # Attach SIRAD ID and/or addresses to each data set to produce the
     # final set of research files.
-
-    id_dsns = frozenset(ids.index)
 
     for dataset in config.DATASETS:
 
