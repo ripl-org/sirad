@@ -21,7 +21,7 @@ def salted_hash(value, salt):
 def standard_datetime(dobj):
     return datetime.strftime(dobj, config.DATE_FORMAT)
 
-def date(raw, date_format, column):
+def date(raw, date_format, dataset, column):
     """
     Extract date from value given date format. If date
     can't be extracted, return empty string.
@@ -34,7 +34,7 @@ def date(raw, date_format, column):
             break
         except ValueError:
             if _debug_count.get(column, 0) < _debug_threshold:
-                debug("Unable to process '{}' value '{}' as date with format '{}'".format(column, raw, fmt))
+                debug("Unable to process '{}/{}' value '{}' as date with format '{}'".format(dataset, column, raw, fmt))
                 _debug_count[column] = _debug_count.get(column, 0) + 1
             pass
     if dobj is None:
@@ -57,7 +57,7 @@ def data(raw, field):
             if isinstance(raw, datetime):
                 return standard_datetime(raw)
             else:
-                return date(raw, field.format, field.name)
+                return date(raw, field.format, field.dataset, field.name)
         else:
             return raw
 
@@ -76,6 +76,6 @@ def pii(raw, field):
             if isinstance(raw, datetime):
                 return standard_datetime(raw)
             else:
-                return date(raw, field.format, field.name)
+                return date(raw, field.format, field.dataset, field.name)
         else:
             return raw

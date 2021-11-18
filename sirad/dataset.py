@@ -55,6 +55,7 @@ class Field(object):
         self.ssn = False
         self.type = "varchar"
         self.skip = False
+        self.dataset = dataset
         # Parse options
         for k in options:
             if k not in self.options:
