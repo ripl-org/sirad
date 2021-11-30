@@ -122,7 +122,7 @@ class Dataset(object):
         """
         if self.type == "xlsx":
             f = open(self.source, "rb")
-            return readers.xlsx_reader(x.replace('\0', '') for x in f, self.header), f
+            return readers.xlsx_reader(f, self.header), f
         else:
             f = open(self.source, "r", encoding=self.encoding, newline="")
             if self.type == "fixed":
