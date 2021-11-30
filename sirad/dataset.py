@@ -122,14 +122,14 @@ class Dataset(object):
         """
         if self.type == "xlsx":
             f = open(self.source, "rb")
-            return readers.xlsx_reader(f, self.header), f
+            return readers.xlsx_reader(x.replace('\0', '') for x in f, self.header), f
         else:
             f = open(self.source, "r", encoding=self.encoding, newline="")
             if self.type == "fixed":
                 widths = [(fld.name, fld.width) for fld in self.fields if hasattr(fld, "width")]
-                reader = readers.fixed_reader(f, widths)
+                reader = readers.fixed_reader(x.replace('\0', '') for x in f, widths)
             else:
-                reader = readers.csv_reader(f, self.header, delimiter=self.delimiter)
+                reader = readers.csv_reader(x.replace('\0', '') for x in f, self.header, delimiter=self.delimiter)
             return reader, f
 
     def split(self):
