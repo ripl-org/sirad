@@ -149,6 +149,7 @@ char_mapping = str.maketrans(char_mapping)
 class CsvReader(object):
 
     def __init__(self, f, header, **kwargs):
+        csv.field_size_limit(100000000) # Maximum supported row size is 100MB
         self.header = header
         if self.header:
             self.reader = csv.DictReader(f, **kwargs)

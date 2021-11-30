@@ -8,6 +8,7 @@ import logging
 import multiprocessing
 import sirad
 import sys
+import traceback
 
 def main():
 
@@ -77,7 +78,15 @@ def main():
                 pool.map(Process, config.DATASETS, chunksize=1)
             else:
                 for dataset in config.DATASETS:
-                    Process(dataset)
+                    try:
+                        Process(dataset)
+                    except Exception as e:
+                        logging.error("Error processing dataset '{}': {} {}\n{}".format(
+                            dataset.name,
+                            type(e),
+                            str(e),
+                            "".join(traceback.format_tb(e.__traceback__)))
+                        )
 
         elif args.cmd == "research":
             config.parse_layouts()
