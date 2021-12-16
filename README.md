@@ -87,8 +87,9 @@ Run unit tests as:
 
 `sirad` can also be used as an API from custom Python code. Documentation to come.
 
-## Authors
+## Contributors
 * Mark Howison
 * Ted Lawless
 * John Ucles
 * Preston White
+* Marcelle Goggins
