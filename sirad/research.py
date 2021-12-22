@@ -42,7 +42,7 @@ def Censuscode(dataset, prefix, addresses):
     filename = "{}.censuscode.{}.csv".format(config.get_path(dataset.name, "pii").rpartition(".")[0], prefix)
     logname = "{}.censuscode.{}.log".format(config.get_path(dataset.name, "research").rpartition(".")[0], prefix)
 
-    zip = "{}_zip5".format(prefix)
+    zip5 = "{}_zip5".format(prefix)
     city = "{}_city".format(prefix)
     street = "{}_street".format(prefix)
     street_num = "{}_street_num".format(prefix)
@@ -73,16 +73,16 @@ def Censuscode(dataset, prefix, addresses):
         print(len(num_lookup), "look-ups for street number ranges", file=log)
 
         info("Filtering records with non-missing zip codes")
-        addresses = addresses[addresses[zip].notnull()]
+        addresses = addresses[addresses[zip5].notnull()]
         N.append(len(addresses))
         print(N[-1], "records with non-missing zip codes", file=log)
 
         info("Filtering records with valid integer zip codes")
-        if addresses[zip].dtype == "O":
-            addresses[zip] = addresses[zip].str.extract("(\d+)", expand=False)
-            addresses = addresses[addresses[zip].notnull()]
-        addresses[zip] = addresses[zip].astype(int)
-        addresses = addresses[addresses[zip].isin(streets.zip.unique())]
+        if addresses[zip5].dtype == "O":
+            addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False)
+            addresses = addresses[addresses[zip5].notnull()]
+        addresses[zip5] = addresses[zip5].astype(int)
+        addresses = addresses[addresses[zip5].isin(streets.zip.unique())]
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
 
@@ -95,12 +95,12 @@ def Censuscode(dataset, prefix, addresses):
         info("Merge 1 on distinct street name")
         addresses = addresses.merge(streets,
                                     how="left",
-                                    left_on=[street, zip],
+                                    left_on=[street, zip5],
                                     right_on=["street", "zip"],
                                     validate="many_to_one")
         assert len(addresses) == N[-1]
         merged = addresses[geo_level[1]].notnull()
-        addresses.loc[merged, ["pii_id", city, zip, geo_level[1]]].to_csv(filename, float_format="%.0f", index=False)
+        addresses.loc[merged, ["pii_id", city, zip5, geo_level[1]]].to_csv(filename, float_format="%.0f", index=False)
         print("merged", merged.sum(), "records on distinct street name", file=log)
 
         # Remove merged addresses.
@@ -120,12 +120,12 @@ def Censuscode(dataset, prefix, addresses):
         info("Merge 2 on distinct street name/num")
         addresses = addresses.merge(nums,
                                     how="left",
-                                    left_on=[street_num, street, zip],
+                                    left_on=[street_num, street, zip5],
                                     right_on=["street_num", "street", "zip"],
                                     validate="many_to_one")
         assert len(addresses) == N[-1]
         merged = addresses[geo_level[1]].notnull()
-        addresses.loc[merged, ["pii_id", city, zip, geo_level[1]]].to_csv(filename, float_format="%.0f", index=False, mode="a", header=False)
+        addresses.loc[merged, ["pii_id", city, zip5, geo_level[1]]].to_csv(filename, float_format="%.0f", index=False, mode="a", header=False)
         print("merged", merged.sum(), "records on distinct street name/num", file=log)
 
         # Remove merged addresses.
@@ -137,10 +137,10 @@ def Censuscode(dataset, prefix, addresses):
         info("Merge 3 with street number range search")
         merged = []
         for _, row in addresses.iterrows():
-            l = num_lookup.get((row[street], row[zip]))
+            l = num_lookup.get((row[street], row[zip5]))
             if l is not None:
                 i = np.searchsorted(l[0], row[street_num], side="right")
-                merged.append((row["pii_id"], row[city], row[zip], l[1][max(0, i-1)]))
+                merged.append((row["pii_id"], row[city], row[zip5], l[1][max(0, i-1)]))
         print("merged", len(merged), "records on nearest street name/num", file=log)
         with open(filename, "a") as f:
             for row in merged:
@@ -184,13 +184,16 @@ def Addresses(dataset):
                              low_memory=False)
 
             if len(df) > 0:
-                zip = "{}_zip5".format(prefix)
+                zip5 = "{}_zip5".format(prefix)
                 city = "{}_city".format(prefix)
                 street = "{}_street".format(prefix)
                 street_num = "{}_street_num".format(prefix)
 
+                # Pad zip codes with leading 0s and use zip9 if zip5 is not available.
                 if contains["zip9"] and not contains["zip5"]:
-                    df[zip] = df["{}_zip9".format(prefix)].astype(str).str.slice(0, 5)
+                    df[zip5] = df["{}_zip9".format(prefix)].astype(str).str.pad(9, "left", "0").str.slice(0, 5)
+                else:
+                    df[zip5] = df[zip5].astype(str).str.pad(5, "left", "0")
 
                 if contains["address"]:
                     address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).fillna("").apply(_split_address).tolist())
@@ -200,14 +203,13 @@ def Addresses(dataset):
                         df[street] = address.StreetName
                     df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
 
-                if zip in df.columns and street in df.columns and street_num in df.columns:
+                if zip5 in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
                         df[city] = ""
-                    Censuscode(dataset, prefix, df[["pii_id", zip, city, street, street_num]])
-
+                    Censuscode(dataset, prefix, df[["pii_id", zip5, city, street, street_num]])
                 else:
                     info("Unable to restructure address PII columns (zip: {}, street: {}, street_num: {})".format(
-                        zip in df.columns,
+                        zip5 in df.columns,
                         street in df.columns,
                         street_num in df.columns))
             else:
@@ -227,9 +229,9 @@ def SiradID():
     info = Log(__name__, "SiradID").info
     datasets = set()
     pii = []
+    have_name_dob = False
 
     for dataset in [d for d in config.DATASETS if d.has_pii]:
-
 
         info("Loading PII for", dataset.name)
         columns = frozenset(dataset.pii_header)
@@ -242,6 +244,7 @@ def SiradID():
             id_fields += ["ssn", "ssn_invalid"]
         if "first_name" in columns and "last_name" in columns and "dob" in columns:
             id_fields += ["first_name", "last_name", "dob"]
+            have_name_dob = True
 
         # Either the SSN or name/DOB fields must be available to construct
         # a SIRAD ID for the dataset.
@@ -260,57 +263,65 @@ def SiradID():
                 datasets.add(dataset.name)
                 pii.append(df)
 
-    # Keep track of statistics while constructing the SIRAD ID.
-    stats = pd.DataFrame(index=datasets)
+    if len(pii) == 0:
+        info("Not enough PII records to construct SIRAD ID")
 
-    info("Concatenating PII")
-    pii = pd.concat(pii, ignore_index=True, sort=False)
-    stats["n_all_pii"] = pii["dsn"].value_counts()
+    else:
+        # Keep track of statistics while constructing the SIRAD ID.
+        stats = pd.DataFrame(index=datasets)
 
-    info("Matching DOB/names to distinct valid SSN")
-    valid = ((pii.ssn_invalid == 0) &
-             (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
-    # Keep first record for distinct name/DOB/SSN,
-    # then drop records that have more than one SSN per name/DOB
-    dob_names = pii.loc[valid]\
-                   .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
-                   .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
+        info("Concatenating PII")
+        pii = pd.concat(pii, ignore_index=True, sort=False)
+        stats["n_all_pii"] = pii["dsn"].value_counts()
 
-    info("Filling missing SSNs with DOB/name match")
-    pii = pii.merge(dob_names,
-                    on=["dob", "last_name", "first_sdx"],
-                    how="left",
-                    suffixes=("", "_dob_names"))
-    merged = pii.ssn_dob_names.notnull()
-    pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
-    pii.loc[merged, "ssn_invalid"] = 0
-    stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
+        if have_name_dob:
 
-    info("Creating keys for valid SSNs")
-    pii["key"] = np.nan
-    valid_ssn = pii.ssn_invalid == 0
-    pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
-    stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
+            info("Matching DOB/names to distinct valid SSN")
+            valid = ((pii.ssn_invalid == 0) &
+                     (pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()))
+            # Keep first record for distinct name/DOB/SSN,
+            # then drop records that have more than one SSN per name/DOB
+            dob_names = pii.loc[valid]\
+                           .drop_duplicates(["dob", "last_name", "first_sdx", "ssn"])\
+                           .drop_duplicates(["dob", "last_name", "first_sdx"], keep=False)
 
-    info("Creating keys for valid DOB/names")
-    valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
-    pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
-    stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
+            info("Filling missing SSNs with DOB/name match")
+            pii = pii.merge(dob_names,
+                            on=["dob", "last_name", "first_sdx"],
+                            how="left",
+                            suffixes=("", "_dob_names"))
+            merged = pii.ssn_dob_names.notnull()
+            pii.loc[merged, "ssn"] = pii.loc[merged, "ssn_dob_names"]
+            pii.loc[merged, "ssn_invalid"] = 0
+            stats["n_ssn_fills"] = pii.loc[merged, "dsn"].value_counts()
 
-    info("Generating SIRAD_ID as randomized dense rank over keys")
-    key = pii.key[pii.key.notnull()].unique()
-    np.random.shuffle(key)
-    sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
-    pii = pii.merge(sirad_id, on="key", how="left")
-    stats["n_ids"] = pii.loc[pii.sirad_id.notnull(), "dsn"].value_counts()
+        info("Creating keys for valid SSNs")
+        pii["key"] = np.nan
+        valid_ssn = pii.ssn_invalid == 0
+        pii.loc[valid_ssn, "key"] = pii.loc[valid_ssn, "ssn"]
+        stats["n_ssn_keys"] = pii.loc[valid_ssn, "dsn"].value_counts()
 
-    pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
-    pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
+        if have_name_dob:
 
-    # Save SIRAD ID statistics to a file in the research output directory.
-    stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
+            info("Creating keys for valid DOB/names")
+            valid_dobn = (~valid_ssn) & pii.dob.notnull() & pii.last_name.notnull() & pii.first_sdx.notnull()
+            pii.loc[valid_dobn, "key"] = pii.loc[valid_dobn].apply(lambda x: "{}_{}_{}".format(x.dob, x.last_name, x.first_sdx), axis=1)
+            stats["n_dobn_keys"] = pii.loc[valid_dobn, "dsn"].value_counts()
 
-    info("Done")
+        info("Generating SIRAD_ID as randomized dense rank over keys")
+        key = pii.key[pii.key.notnull()].unique()
+        np.random.shuffle(key)
+        sirad_id = pd.DataFrame({"key": key, "sirad_id": np.arange(1, len(key)+1)})
+        pii = pii.merge(sirad_id, on="key", how="left")
+        stats["n_ids"] = pii.loc[pii.sirad_id.notnull(), "dsn"].value_counts()
+
+        pii["sirad_id"] = pii.sirad_id.fillna(0).astype(int)
+        pii = pii[["dsn", "pii_id", "sirad_id"]].set_index("dsn")
+
+        # Save SIRAD ID statistics to a file in the research output directory.
+        stats.to_csv(config.get_path("sirad_id_stats", "research"), float_format="%g")
+        info("Done")
+
     return pii
 
 
@@ -362,10 +373,15 @@ def Research(nthreads=1, seed=0):
                Addresses(dataset)
         ids = SiradID()
 
+    if len(ids) > 0:
+        info("Writing SIRAD_ID table")
+        ids.to_csv(config.get_path("sirad_id", "pii"), float_format="%g")
+        id_dsns = frozenset(ids.index)
+    else:
+        id_dsns = []
+
     # Attach SIRAD ID and/or addresses to each data set to produce the
     # final set of research files.
-
-    id_dsns = frozenset(ids.index)
 
     for dataset in config.DATASETS:
 

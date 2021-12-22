@@ -55,6 +55,7 @@ class Field(object):
         self.ssn = False
         self.type = "varchar"
         self.skip = False
+        self.dataset = dataset
         # Parse options
         for k in options:
             if k not in self.options:
@@ -126,9 +127,9 @@ class Dataset(object):
             f = open(self.source, "r", encoding=self.encoding, newline="")
             if self.type == "fixed":
                 widths = [(fld.name, fld.width) for fld in self.fields if hasattr(fld, "width")]
-                reader = readers.fixed_reader(f, widths)
+                reader = readers.fixed_reader((x.replace('\x00', '') for x in f), widths)
             else:
-                reader = readers.csv_reader(f, self.header, delimiter=self.delimiter)
+                reader = readers.csv_reader((x.replace('\x00', '') for x in f), self.header, delimiter=self.delimiter)
             return reader, f
 
     def split(self):
