@@ -5,24 +5,13 @@ Create a research release.
 import numpy as np
 import os
 import pandas as pd
-import usaddress
 
 from sirad import config, Log
+from sirad.address import extract_street_num, normalize_street
 from sirad.soundex import soundex
 from multiprocessing import Process, Queue
 
 _address_prefixes = ("home", "employer", "mailing", "employer1", "employer2", "employer3")
-
-
-def _split_address(x):
-    """
-    Run usaddress tag method on full street address field to split it into
-    street name and number.
-    """
-    try:
-        return usaddress.tag(x)[0]
-    except usaddress.RepeatedLabelError:
-        return usaddress.tag("")[0]
 
 
 def _str_format(x):
@@ -169,43 +158,43 @@ def Addresses(dataset):
         address_fields = ["pii_id"]
 
         # Identify which address PII fields are present in the data set.
-        contains = dict((name, "{}_{}".format(prefix, name) in columns)
+        contains = dict((name, f"{prefix}_{name}" in columns)
                          for name in ("zip5", "zip9", "city", "address", "street", "street_num"))
 
         # Census coding requires a zip code and street name at a minimum
         if (contains["zip5"] or contains["zip9"]) and (contains["address"] or contains["street"]):
-            address_fields += sorted("{}_{}".format(prefix, name) for name in contains if contains[name])
+            address_fields += sorted(f"{prefix}_{name}" for name in contains if contains[name])
 
         # If address PII fields are present, load them from the PII file.
         if len(address_fields) > 1:
+
             df = pd.read_csv(config.get_path(dataset.name, "pii"),
                              sep="|",
                              usecols=address_fields,
-                             low_memory=False)
+                             dtype=str)
 
             if len(df) > 0:
-                zip5 = "{}_zip5".format(prefix)
-                city = "{}_city".format(prefix)
-                street = "{}_street".format(prefix)
-                street_num = "{}_street_num".format(prefix)
+                zip5 = f"{prefix}_zip5"
+                city = f"{prefix}_city"
+                address = f"{prefix}_address"
+                street = f"{prefix}_street"
+                street_num = f"{prefix}_street_num"
 
                 # Pad zip codes with leading 0s and use zip9 if zip5 is not available.
                 if contains["zip9"] and not contains["zip5"]:
-                    df[zip5] = df["{}_zip9".format(prefix)].astype(str).str.pad(9, "left", "0").str.slice(0, 5)
+                    df.loc[zip5,:] = df[f"{prefix}_zip9"].str.pad(9, "left", "0").str.slice(0, 5)
                 else:
-                    df[zip5] = df[zip5].astype(str).str.pad(5, "left", "0")
+                    df.loc[zip5,:] = df[zip5].str.pad(5, "left", "0").str.slice(0, 5)
 
                 if contains["address"]:
-                    address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).fillna("").apply(_split_address).tolist())
-                    if "StreetNamePreDirectional" in address.columns:
-                        df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
-                    else:
-                        df[street] = address.StreetName
-                    df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
+                    df.loc[street_num,:] = df[address].apply(extract_street_num)
+                else:
+                    df.loc[address,:] = df[street_num] + " " + df[street]
+                df.loc[street,:] = df[address].apply(normalize_street)
 
                 if zip5 in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
-                        df[city] = ""
+                        df.loc[city,:] = ""
                     Censuscode(dataset, prefix, df[["pii_id", zip5, city, street, street_num]])
                 else:
                     info("Unable to restructure address PII columns (zip: {}, street: {}, street_num: {})".format(
@@ -259,7 +248,7 @@ def SiradID():
                     df["first_sdx"] = np.nan
                     valid_name = df.first_name.notnull()
                     df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
-                df["dsn"] = dataset.name
+                df.loc["dsn",:] = dataset.name
                 datasets.add(dataset.name)
                 pii.append(df)
 
