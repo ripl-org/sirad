@@ -72,7 +72,7 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records with non-missing zip codes", file=log)
 
         info("Filtering records with valid integer zip codes")
-        addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False).fillna("0").astype(int)
+        addresses.loc[:,zip5] = addresses[zip5].str.extract("(\d+)", expand=False).fillna("0").astype(int)
         addresses = addresses[addresses[zip5].isin(streets.zip.unique())]
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
