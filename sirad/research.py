@@ -186,10 +186,11 @@ def Addresses(dataset):
                     df.loc[:,zip5] = df[zip5].str.pad(5, "left", "0").str.slice(0, 5)
 
                 if contains["address"]:
-                    df.loc[:,street_num] = df[address].fillna("").apply(extract_street_num)
+                    df.loc[:,address] = df[address].fillna("")
                 else:
                     df.loc[:,address] = df[street_num].fillna("") + " " + df[street].fillna("")
-                df.loc[:,street] = df[address].fillna("").apply(normalize_street)
+                df.loc[:,street_num] = df[address].apply(extract_street_num)
+                df.loc[:,street] = df[address].apply(normalize_street)
 
                 if zip5 in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:

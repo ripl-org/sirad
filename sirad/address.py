@@ -1,7 +1,7 @@
 import usaddress
 from sirad import Log
 
-info = Log(__name__).info
+debug = Log(__name__).debug
 
 
 def _clean(address):
@@ -38,10 +38,10 @@ def _tag(address):
     try:
         tags = usaddress.tag(address)
     except:
-        info(f"cannot tag address {address}")
+        debug(f"cannot tag address {address}")
         return None
     if len(tags) < 1:
-        info(f"empty tags for address {address}")
+        debug(f"empty tags for address {address}")
         return None
     else:
         return tags
@@ -65,7 +65,7 @@ def normalize_street(address):
         elif "StreetNamePostDirectional" in tags:
             return tags["StreetNamePostDirectional"]
         else:
-            info(f"missing street name for address {address}")
+            debug(f"missing street name for address {address}")
     return ""
 
 
@@ -79,5 +79,5 @@ def extract_street_num(address):
         if "AddressNumber" in tags:
             return tags["AddressNumber"]
         else:
-            info(f"missing street num for address {address}")
+            debug(f"missing street num for address {address}")
     return ""
