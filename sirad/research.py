@@ -100,8 +100,8 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records remaining", file=log)
 
         # Keep records with valid integer street nums.
-        addresses = addresses[addresses[street_num] != ""]
-        addresses.loc[:,street_num] = addresses[street_num].astype(int)
+        addresses.loc[:,street_num] = addresses[street_num].str.extract("(\d+)", expand=False).fillna("0").astype(int)
+        addresses = addresses[addresses[street_num] != 0]
         N.append(len(addresses))
         print(N[-1], "records with valid integer street nums", file=log)
 
