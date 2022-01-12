@@ -37,7 +37,7 @@ def Censuscode(dataset, prefix, addresses):
     street_num = "{}_street_num".format(prefix)
 
     # Clean city
-    addresses[city] = addresses[city].str.upper().str.extract("([A-Z ]+)", expand=False)
+    addresses.loc[city,:] = addresses[city].fillna("").str.upper().str.extract("([A-Z ]+)", expand=False)
 
     N = [len(addresses)]
     geo_level = ("blkgrp", "{}_blkgrp".format(prefix))
@@ -45,13 +45,18 @@ def Censuscode(dataset, prefix, addresses):
     with open(logname, "w") as log:
 
         info("Loading lookup files")
-        streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"), low_memory=False)\
+
+        streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"), dtype=str)\
                     .rename(columns={geo_level[0]: geo_level[1]})\
                     .drop_duplicates(["street", "zip"])
+        streets["zip",:] = streets["zip"].astype(int)        
         print(len(streets), "distinct street names", file=log)
-        nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"), low_memory=False)\
+
+        nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"), dtype=str)\
                  .rename(columns={geo_level[0]: geo_level[1]})\
                  .drop_duplicates(["street_num", "street", "zip"])
+        nums["street_num",:] = nums["street_num"].astype(int)
+        nums["zip",:] = nums["zip"].astype(int)
         print(len(nums), "distinct street name/numbers", file=log)
 
         info("Building range look-up for street nums")
@@ -67,17 +72,14 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records with non-missing zip codes", file=log)
 
         info("Filtering records with valid integer zip codes")
-        if addresses[zip5].dtype == "O":
-            addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False)
-            addresses = addresses[addresses[zip5].notnull()]
-        addresses[zip5] = addresses[zip5].astype(int)
+        addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False)
+        addresses = addresses[addresses[zip5].notnull()].astype(int)
         addresses = addresses[addresses[zip5].isin(streets.zip.unique())]
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
 
         info("Filtering records with valid street names")
-        addresses[street] = addresses[street].str.upper().str.extract("([0-9A-Z ]+)", expand=False)
-        addresses = addresses[addresses[street].notnull()]
+        addresses = addresses[addresses[street] != ""]
         N.append(len(addresses))
         print(N[-1], "records with valid street names", file=log)
 
@@ -99,10 +101,8 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records remaining", file=log)
 
         # Keep records with valid integer street nums.
-        if addresses[street_num].dtype == "O":
-            addresses[street_num] = addresses[street_num].str.extract("(\d+)", expand=False)
-        addresses = addresses[addresses[street_num].notnull()]
-        addresses[street_num] = addresses[street_num].astype(int)
+        addresses = addresses[addresses[street_num] != ""]
+        addresses.loc[street_num,:] = addresses[street_num].astype(int)
         N.append(len(addresses))
         print(N[-1], "records with valid integer street nums", file=log)
 
@@ -187,10 +187,10 @@ def Addresses(dataset):
                     df.loc[zip5,:] = df[zip5].str.pad(5, "left", "0").str.slice(0, 5)
 
                 if contains["address"]:
-                    df.loc[street_num,:] = df[address].apply(extract_street_num)
+                    df.loc[street_num,:] = df[address].fillna("").apply(extract_street_num).fillna("")
                 else:
-                    df.loc[address,:] = df[street_num] + " " + df[street]
-                df.loc[street,:] = df[address].apply(normalize_street)
+                    df.loc[address,:] = df[street_num].fillna("") + " " + df[street].fillna("")
+                df.loc[street,:] = df[address].apply(normalize_street).fillna("")
 
                 if zip5 in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
