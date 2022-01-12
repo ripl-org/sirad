@@ -37,7 +37,7 @@ def Censuscode(dataset, prefix, addresses):
     street_num = "{}_street_num".format(prefix)
 
     # Clean city
-    addresses.loc[city,:] = addresses[city].fillna("").str.upper().str.extract("([A-Z ]+)", expand=False)
+    addresses.loc[:,city] = addresses[city].fillna("").str.upper().str.extract("([A-Z ]+)", expand=False).fillna("")
 
     N = [len(addresses)]
     geo_level = ("blkgrp", "{}_blkgrp".format(prefix))
@@ -49,14 +49,14 @@ def Censuscode(dataset, prefix, addresses):
         streets = pd.read_csv(config.get_option("CENSUS_STREET_FILE"), dtype=str)\
                     .rename(columns={geo_level[0]: geo_level[1]})\
                     .drop_duplicates(["street", "zip"])
-        streets["zip",:] = streets["zip"].astype(int)        
+        streets.loc[:,"zip"] = streets["zip"].astype(int)
         print(len(streets), "distinct street names", file=log)
 
         nums = pd.read_csv(config.get_option("CENSUS_STREET_NUM_FILE"), dtype=str)\
                  .rename(columns={geo_level[0]: geo_level[1]})\
                  .drop_duplicates(["street_num", "street", "zip"])
-        nums["street_num",:] = nums["street_num"].astype(int)
-        nums["zip",:] = nums["zip"].astype(int)
+        nums.loc[:,"street_num"] = nums["street_num"].astype(int)
+        nums.loc[:,"zip"] = nums["zip"].astype(int)
         print(len(nums), "distinct street name/numbers", file=log)
 
         info("Building range look-up for street nums")
@@ -72,8 +72,7 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records with non-missing zip codes", file=log)
 
         info("Filtering records with valid integer zip codes")
-        addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False)
-        addresses = addresses[addresses[zip5].notnull()].astype(int)
+        addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False).fillna("0").astype(int)
         addresses = addresses[addresses[zip5].isin(streets.zip.unique())]
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
@@ -102,7 +101,7 @@ def Censuscode(dataset, prefix, addresses):
 
         # Keep records with valid integer street nums.
         addresses = addresses[addresses[street_num] != ""]
-        addresses.loc[street_num,:] = addresses[street_num].astype(int)
+        addresses.loc[:,street_num] = addresses[street_num].astype(int)
         N.append(len(addresses))
         print(N[-1], "records with valid integer street nums", file=log)
 
@@ -182,19 +181,19 @@ def Addresses(dataset):
 
                 # Pad zip codes with leading 0s and use zip9 if zip5 is not available.
                 if contains["zip9"] and not contains["zip5"]:
-                    df.loc[zip5,:] = df[f"{prefix}_zip9"].str.pad(9, "left", "0").str.slice(0, 5)
+                    df.loc[:,zip5] = df[f"{prefix}_zip9"].str.pad(9, "left", "0").str.slice(0, 5)
                 else:
-                    df.loc[zip5,:] = df[zip5].str.pad(5, "left", "0").str.slice(0, 5)
+                    df.loc[:,zip5] = df[zip5].str.pad(5, "left", "0").str.slice(0, 5)
 
                 if contains["address"]:
-                    df.loc[street_num,:] = df[address].fillna("").apply(extract_street_num).fillna("")
+                    df.loc[:,street_num] = df[address].fillna("").apply(extract_street_num)
                 else:
-                    df.loc[address,:] = df[street_num].fillna("") + " " + df[street].fillna("")
-                df.loc[street,:] = df[address].apply(normalize_street).fillna("")
+                    df.loc[:,address] = df[street_num].fillna("") + " " + df[street].fillna("")
+                df.loc[:,street] = df[address].fillna("").apply(normalize_street)
 
                 if zip5 in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
-                        df.loc[city,:] = ""
+                        df.loc[:,city] = ""
                     Censuscode(dataset, prefix, df[["pii_id", zip5, city, street, street_num]])
                 else:
                     info("Unable to restructure address PII columns (zip: {}, street: {}, street_num: {})".format(
@@ -248,7 +247,7 @@ def SiradID():
                     df["first_sdx"] = np.nan
                     valid_name = df.first_name.notnull()
                     df.loc[valid_name, "first_sdx"] = df.loc[valid_name, "first_name"].apply(soundex)
-                df.loc["dsn",:] = dataset.name
+                df.loc[:,"dsn"] = dataset.name
                 datasets.add(dataset.name)
                 pii.append(df)
 

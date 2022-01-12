@@ -66,9 +66,7 @@ def normalize_street(address):
             return tags["StreetNamePostDirectional"]
         else:
             info(f"missing street name for address {address}")
-            return ""
-    else:
-        return ""
+    return ""
 
 
 def extract_street_num(address):
@@ -77,8 +75,9 @@ def extract_street_num(address):
     """
     tags = _tag(_clean(address))
     if tags is not None:
-        if "StreetNum" in tags:
-            return tags["StreetNum"]
+        tags = tags[0]
+        if "AddressNumber" in tags:
+            return tags["AddressNumber"]
         else:
             info(f"missing street num for address {address}")
     return ""
