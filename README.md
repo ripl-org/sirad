@@ -7,15 +7,22 @@ researchers to securely join data on an individual from multiple tables without
 knowing the individual's identity. It is developed by
 [Research Improving People's Lives (RIPL)](https://ripl.org).
 
-For a worked example and further details, please see
+For a worked example using synthetic data, please see
 [sirad-example](https://github.com/ripl-org/sirad-example).
 
+More detailed documentation of the `sirad` configuration file and layout file
+formats is available in the [wiki](https://github.com/ripl-org/sirad/wiki).
+
 To learn more about the motivation for creating this package and its potential
-uses, please see our article in *Communications of the ACM*:
+uses, please see our articles in *Communications of the ACM* and *Software Impacts*:
 
 > J.S. Hastings, M. Howison, T. Lawless, J. Ucles, P. White. (2019).
 > Unlocking Data to Improve Public Policy. *Communications of the ACM* **62**(10): 48-53.
 > doi:[10.1145/3335150](https://doi.org/10.1145/3335150)
+
+> M. Howison, M. Goggins. (2022).
+> SIRAD: Secure Infrastructure for Research with Administrative Data. *Software Impacts* **12**: 100245.
+> doi:[10.1016/j.simpa.2022.100245](https://doi.org/10.1016/j.simpa.2022.100245)
 
 ## Installation
 
@@ -23,9 +30,6 @@ Requires Python 3.7 or later.
 
 To install from PyPI using **pip**:  
 `pip install sirad`
-
-To install using **Anaconda Python**:  
-`conda install -c ripl-org sirad`
 
 To install a **development version** from the current directory:  
 `pip install -e .`
@@ -84,8 +88,6 @@ real individuals.
 Run unit tests as:
 
 `python -m unittest discover`
-
-`sirad` can also be used as an API from custom Python code. Documentation to come.
 
 ## Contributors
 * Mark Howison
