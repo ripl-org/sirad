@@ -72,14 +72,7 @@ def Censuscode(dataset, prefix, addresses):
         print(N[-1], "records with non-missing zip codes", file=log)
 
         info("Filtering records with valid integer zip codes")
-<<<<<<< HEAD
         addresses.loc[:,zip5] = addresses[zip5].str.extract("(\d+)", expand=False).fillna("0").astype(int)
-=======
-        if addresses[zip5].dtype == "O":
-            addresses[zip5] = addresses[zip5].str.extract("(\d+)", expand=False)
-            addresses = addresses[addresses[zip5].notnull()]
-        addresses[zip5] = addresses[zip5].astype(int)
->>>>>>> main
         addresses = addresses[addresses[zip5].isin(streets.zip.unique())]
         N.append(len(addresses))
         print(N[-1], "records with valid integer zip codes", file=log)
@@ -180,7 +173,6 @@ def Addresses(dataset):
                              dtype=str)
 
             if len(df) > 0:
-<<<<<<< HEAD
                 zip5 = f"{prefix}_zip5"
                 city = f"{prefix}_city"
                 address = f"{prefix}_address"
@@ -203,30 +195,6 @@ def Addresses(dataset):
                 if zip5 in df.columns and street in df.columns and street_num in df.columns:
                     if not contains["city"]:
                         df.loc[:,city] = ""
-=======
-                zip5 = "{}_zip5".format(prefix)
-                city = "{}_city".format(prefix)
-                street = "{}_street".format(prefix)
-                street_num = "{}_street_num".format(prefix)
-
-                # Pad zip codes with leading 0s and use zip9 if zip5 is not available.
-                if contains["zip9"] and not contains["zip5"]:
-                    df[zip5] = df["{}_zip9".format(prefix)].astype(str).str.pad(9, "left", "0").str.slice(0, 5)
-                else:
-                    df[zip5] = df[zip5].astype(str).str.pad(5, "left", "0")
-
-                if contains["address"]:
-                    address = pd.DataFrame(df["{}_address".format(prefix)].str.upper().str.extract("([0-9A-Z ]+)", expand=False).fillna("").apply(_split_address).tolist())
-                    if "StreetNamePreDirectional" in address.columns:
-                        df[street] = np.where(address.StreetNamePreDirectional.notnull(), address.StreetNamePreDirectional + " " + address.StreetName, address.StreetName)
-                    else:
-                        df[street] = address.StreetName
-                    df[street_num] = np.where(address.AddressNumber.str.isdigit(), address.AddressNumber, np.nan)
-
-                if zip5 in df.columns and street in df.columns and street_num in df.columns:
-                    if not contains["city"]:
-                        df[city] = ""
->>>>>>> main
                     Censuscode(dataset, prefix, df[["pii_id", zip5, city, street, street_num]])
                 else:
                     info("Unable to restructure address PII columns (zip: {}, street: {}, street_num: {})".format(
