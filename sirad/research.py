@@ -146,7 +146,7 @@ def Addresses(dataset):
     if sufficient address components are available.
     """
     columns = frozenset(dataset.pii_header)
-    assert "pii_id" in columns
+    assert "pii_id" in columns, dataset.name
     output = []
 
     # Loop over address type.
@@ -225,11 +225,11 @@ def SiradID():
         info("Loading PII for", dataset.name)
         columns = frozenset(dataset.pii_header)
         id_fields = ["pii_id"]
-        assert "pii_id" in columns
+        assert "pii_id" in columns, dataset.name
 
         # Identify which PII columns are present.
         if "ssn" in columns:
-            assert "ssn_invalid" in columns
+            assert "ssn_invalid" in columns, dataset.name
             id_fields += ["ssn", "ssn_invalid"]
         if "first_name" in columns and "last_name" in columns and "dob" in columns:
             id_fields += ["first_name", "last_name", "dob"]
